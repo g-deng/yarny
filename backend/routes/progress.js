@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// GET /api/users/:userId/projects — user's own projects with progress
+// GET /api/users/:userId/projects — user's own + tracked projects with progress
 router.get('/:userId/projects', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -14,6 +14,7 @@ router.get('/:userId/projects', async (req, res) => {
        FROM projects p
        LEFT JOIN progress pr ON pr.project_id = p.id AND pr.user_id = $1
        WHERE p.user_id = $1
+          OR pr.user_id = $1
        ORDER BY p.last_worked_at DESC NULLS LAST`,
       [userId]
     );
@@ -28,6 +29,54 @@ router.get('/:userId/projects', async (req, res) => {
     });
 
     res.json(projects);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/users/:userId/projects/:id/track — stop tracking a project
+router.delete('/:userId/projects/:id/track', async (req, res) => {
+  try {
+    const { userId, id: projectId } = req.params;
+    await pool.query(
+      'DELETE FROM progress WHERE user_id = $1 AND project_id = $2',
+      [userId, projectId]
+    );
+    await pool.query(
+      'DELETE FROM progress_log WHERE user_id = $1 AND project_id = $2',
+      [userId, projectId]
+    );
+    res.json({ message: 'Stopped tracking project' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/users/:userId/projects/:id/add — add someone else's project to track
+router.post('/:userId/projects/:id/add', async (req, res) => {
+  try {
+    const { userId, id: projectId } = req.params;
+
+    // Check project exists
+    const projectResult = await pool.query('SELECT id FROM projects WHERE id = $1', [projectId]);
+    if (projectResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Create progress record (upsert — no-op if already tracking)
+    const result = await pool.query(
+      `INSERT INTO progress (user_id, project_id, rows_completed, updated_at)
+       VALUES ($1, $2, 0, NOW())
+       ON CONFLICT (user_id, project_id) DO NOTHING
+       RETURNING *`,
+      [userId, projectId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ message: 'Already tracking this project' });
+    }
+
+    res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

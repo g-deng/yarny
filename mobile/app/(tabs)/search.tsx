@@ -69,7 +69,7 @@ export default function SearchScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
-            onPress={() => router.push(`/project/${item.id}/details`)}
+            onPress={() => router.push(`/project/${item.id}/pdf`)}
             activeOpacity={0.8}
           >
             {item.image_url ? (

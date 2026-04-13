@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const pdfParse = require('pdf-parse');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const OpenAI = require('openai');
 const pool = require('../db');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const openrouter = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 // POST /api/projects/:id/parse-pdf
 // Body: { pdf_url: "https://...supabase.co/.../file.pdf" }
@@ -80,8 +83,8 @@ Return ONLY valid JSON, no markdown fences, no explanation. If you are unsure ab
     await client.query('BEGIN');
 
     await client.query(
-      'UPDATE projects SET total_yards = $1, total_rows = $2 WHERE id = $3',
-      [parsed.total_yards, parsed.total_rows, req.params.id]
+      'UPDATE projects SET total_yards = $1, total_rows = $2, pdf_url = $3 WHERE id = $4',
+      [parsed.total_yards, parsed.total_rows, pdf_url, req.params.id]
     );
 
     for (const section of parsed.sections) {

@@ -1,15 +1,21 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { Redirect } from 'expo-router';
 import { useUser } from '@/hooks/use-user';
 import { getUser, type User } from '@/services/api';
 import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
 
 export default function ProfileScreen() {
-  const { userId, loading: userLoading } = useUser();
+  const { userId, loading: userLoading, logOut } = useUser();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Redirect to welcome if logged out
+  if (!userLoading && !userId) {
+    return <Redirect href="/welcome" />;
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -55,6 +61,14 @@ export default function ProfileScreen() {
             Member since {new Date(user.created_at).toLocaleDateString()}
           </Text>
         )}
+
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={logOut}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.logoutButtonText}>Log out</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -79,6 +93,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingTop: 48,
+    paddingHorizontal: 32,
   },
   avatar: {
     width: 80,
@@ -104,5 +119,19 @@ const styles = StyleSheet.create({
     fontFamily: YarnyFonts.body,
     fontSize: YarnySizes.body,
     color: YarnyColors.textPrimary,
+    marginBottom: 32,
+  },
+  logoutButton: {
+    borderWidth: 2,
+    borderColor: YarnyColors.button,
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.button,
   },
 });

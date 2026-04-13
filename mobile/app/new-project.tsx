@@ -81,8 +81,8 @@ export default function NewProjectScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol name="chevron.right" size={24} color={YarnyColors.textPrimary} style={{ transform: [{ rotate: '180deg' }] }} />
+        <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={styles.backButton}>
+          <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Project</Text>
       </View>

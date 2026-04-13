@@ -12,6 +12,7 @@ export interface Project {
   user_id: string;
   title: string;
   image_url: string | null;
+  pdf_url: string | null;
   is_public: boolean;
   total_yards: number | null;
   total_rows: number | null;
@@ -87,6 +88,10 @@ export function getUser(userId: string) {
   return apiFetch<User>(`/api/users/${userId}`);
 }
 
+export function getUserByUsername(username: string) {
+  return apiFetch<User>(`/api/users/by-username/${encodeURIComponent(username)}`);
+}
+
 // Projects
 export function createProject(data: {
   title: string;
@@ -126,6 +131,20 @@ export function advanceProgress(userId: string, projectId: string, rowsToAdd: nu
   });
 }
 
+// Add project to track
+export function addProjectToTrack(userId: string, projectId: string) {
+  return apiFetch<any>(`/api/users/${userId}/projects/${projectId}/add`, {
+    method: 'POST',
+  });
+}
+
+// Stop tracking a project
+export function removeProjectTracking(userId: string, projectId: string) {
+  return apiFetch<any>(`/api/users/${userId}/projects/${projectId}/track`, {
+    method: 'DELETE',
+  });
+}
+
 // Stats
 export function getUserStats(userId: string) {
   return apiFetch<UserStats>(`/api/users/${userId}/stats`);
@@ -139,12 +158,14 @@ export async function uploadImage(imageUri: string): Promise<{ url: string }> {
   const response = await fetch(imageUri);
   const blob = await response.blob();
 
-  const ext = imageUri.split('.').pop() || 'jpg';
+  // Derive extension from blob mime type (reliable) or fallback to jpg
+  const mimeExt = blob.type?.split('/')[1]?.split(';')[0];
+  const ext = mimeExt && /^[a-z0-9]+$/i.test(mimeExt) ? mimeExt : 'jpg';
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
   const { error } = await supabase.storage
     .from('project-images')
-    .upload(filename, blob, { contentType: `image/${ext}` });
+    .upload(filename, blob, { contentType: blob.type || `image/${ext}` });
 
   if (error) throw new Error(error.message);
 

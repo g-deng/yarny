@@ -13,6 +13,7 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    console.error('Create project error:', err.message, req.body);
     res.status(500).json({ error: err.message });
   }
 });

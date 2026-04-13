@@ -15,6 +15,8 @@ import { useUser } from '@/hooks/use-user';
 import {
   getProjectDetail,
   getUserProjects,
+  addProjectToTrack,
+  removeProjectTracking,
   type ProjectDetail,
 } from '@/services/api';
 import { CircularProgress } from '@/components/circular-progress';
@@ -39,6 +41,9 @@ export default function ProjectDetailScreen() {
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [rowsCompleted, setRowsCompleted] = useState(0);
+  const [isTracking, setIsTracking] = useState(false);
+  const [isOwnProject, setIsOwnProject] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
@@ -51,8 +56,10 @@ export default function ProjectDetailScreen() {
             getUserProjects(userId),
           ]);
           setProject(detail);
+          setIsOwnProject(detail.user_id === userId);
           const myProject = userProjects.find((p) => p.id === id);
           setRowsCompleted(myProject?.rows_completed ?? 0);
+          setIsTracking(!!myProject);
         } catch (err) {
           console.error('Failed to fetch project detail:', err);
         } finally {
@@ -61,6 +68,32 @@ export default function ProjectDetailScreen() {
       })();
     }, [id, userId])
   );
+
+  const handleAddProject = async () => {
+    if (!userId || !id) return;
+    setAdding(true);
+    try {
+      await addProjectToTrack(userId, id);
+      setIsTracking(true);
+    } catch (err) {
+      console.error('Failed to add project:', err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleRemoveProject = async () => {
+    if (!userId || !id) return;
+    setAdding(true);
+    try {
+      await removeProjectTracking(userId, id);
+      setIsTracking(false);
+    } catch (err) {
+      console.error('Failed to remove project:', err);
+    } finally {
+      setAdding(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -92,13 +125,44 @@ export default function ProjectDetailScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.replace(`/project/${id}/active`)} style={styles.backButton}>
           <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{project.title}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Add to my projects button */}
+        {!isOwnProject && !isTracking && (
+          <TouchableOpacity
+            style={[styles.addButton, adding && styles.addButtonDisabled]}
+            onPress={handleAddProject}
+            disabled={adding}
+            activeOpacity={0.8}
+          >
+            {adding ? (
+              <ActivityIndicator color={YarnyColors.textSecondary} />
+            ) : (
+              <Text style={styles.addButtonText}>Add to my projects</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {!isOwnProject && isTracking && (
+          <TouchableOpacity
+            style={[styles.removeButton, adding && styles.addButtonDisabled]}
+            onPress={handleRemoveProject}
+            disabled={adding}
+            activeOpacity={0.8}
+          >
+            {adding ? (
+              <ActivityIndicator color={YarnyColors.button} />
+            ) : (
+              <Text style={styles.removeButtonText}>Stop tracking</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
         {/* Overview */}
         <Text style={styles.sectionHeader}>Overview</Text>
         <View style={styles.overviewCard}>
@@ -168,6 +232,34 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+  },
+  addButton: {
+    backgroundColor: YarnyColors.button,
+    borderRadius: 24,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addButtonDisabled: {
+    opacity: 0.6,
+  },
+  addButtonText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
+  },
+  removeButton: {
+    borderWidth: 2,
+    borderColor: YarnyColors.button,
+    borderRadius: 24,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  removeButtonText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.button,
   },
   sectionHeader: {
     fontFamily: YarnyFonts.header,
