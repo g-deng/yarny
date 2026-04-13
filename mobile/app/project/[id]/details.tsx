@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +18,12 @@ import {
   getUserProjects,
   addProjectToTrack,
   removeProjectTracking,
+  getProjectComments,
+  getInlineComments,
+  createComment,
   type ProjectDetail,
+  type Comment,
+  type InlineComment,
 } from '@/services/api';
 import { CircularProgress } from '@/components/circular-progress';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -45,21 +51,29 @@ export default function ProjectDetailScreen() {
   const [isOwnProject, setIsOwnProject] = useState(false);
   const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [projectComments, setProjectComments] = useState<Comment[]>([]);
+  const [inlineComments, setInlineComments] = useState<InlineComment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       if (!id || !userId) return;
       (async () => {
         try {
-          const [detail, userProjects] = await Promise.all([
+          const [detail, userProjects, projectCs, inlineCs] = await Promise.all([
             getProjectDetail(id),
             getUserProjects(userId),
+            getProjectComments(id),
+            getInlineComments(id),
           ]);
           setProject(detail);
           setIsOwnProject(detail.user_id === userId);
           const myProject = userProjects.find((p) => p.id === id);
           setRowsCompleted(myProject?.rows_completed ?? 0);
           setIsTracking(!!myProject);
+          setProjectComments(projectCs);
+          setInlineComments(inlineCs);
         } catch (err) {
           console.error('Failed to fetch project detail:', err);
         } finally {
@@ -92,6 +106,23 @@ export default function ProjectDetailScreen() {
       console.error('Failed to remove project:', err);
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!userId || !id || !newComment.trim() || postingComment) return;
+    setPostingComment(true);
+    try {
+      const comment = await createComment(id, {
+        user_id: userId,
+        body: newComment.trim(),
+      });
+      setProjectComments((prev) => [{ ...comment, username: 'You' }, ...prev]);
+      setNewComment('');
+    } catch (err) {
+      console.error('Failed to post comment:', err);
+    } finally {
+      setPostingComment(false);
     }
   };
 
@@ -200,11 +231,55 @@ export default function ProjectDetailScreen() {
           </View>
         ))}
 
-        {/* Community placeholder */}
+        {/* Project-level comments */}
         <Text style={styles.sectionHeader}>Community</Text>
-        <View style={styles.communityPlaceholder}>
-          <Text style={styles.placeholderText}>Comments coming soon</Text>
+        <View style={styles.commentInputRow}>
+          <TextInput
+            style={styles.commentInput}
+            placeholder="Share your wisdom..."
+            placeholderTextColor={YarnyColors.border}
+            value={newComment}
+            onChangeText={setNewComment}
+            multiline
+          />
+          <TouchableOpacity
+            style={[styles.commentPost, (!newComment.trim() || postingComment) && styles.addButtonDisabled]}
+            onPress={handlePostComment}
+            disabled={!newComment.trim() || postingComment}
+          >
+            {postingComment ? (
+              <ActivityIndicator size="small" color={YarnyColors.textSecondary} />
+            ) : (
+              <Text style={styles.commentPostText}>Post</Text>
+            )}
+          </TouchableOpacity>
         </View>
+        {projectComments.length === 0 ? (
+          <Text style={styles.emptyComments}>No comments yet. Be the first!</Text>
+        ) : (
+          projectComments.map((c) => (
+            <View key={c.id} style={styles.commentCard}>
+              <Text style={styles.commentAuthor}>{c.username}</Text>
+              <Text style={styles.commentBody}>{c.body}</Text>
+            </View>
+          ))
+        )}
+
+        {/* Inline comments (grouped by row) */}
+        {inlineComments.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>Row Comments</Text>
+            {inlineComments.map((c) => (
+              <View key={c.id} style={styles.commentCard}>
+                <Text style={styles.commentMeta}>
+                  {c.section_title} · Row {c.row_number}
+                </Text>
+                <Text style={styles.commentAuthor}>{c.username}</Text>
+                <Text style={styles.commentBody}>{c.body}</Text>
+              </View>
+            ))}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -309,16 +384,65 @@ const styles = StyleSheet.create({
     fontSize: YarnySizes.body,
     color: YarnyColors.textPrimary,
   },
-  communityPlaceholder: {
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    marginBottom: 12,
+  },
+  commentInput: {
+    flex: 1,
     backgroundColor: YarnyColors.card,
     borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-  },
-  placeholderText: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontFamily: YarnyFonts.body,
     fontSize: YarnySizes.body,
     color: YarnyColors.textSecondary,
+    maxHeight: 100,
+  },
+  commentPost: {
+    backgroundColor: YarnyColors.button,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  commentPostText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
+  },
+  commentCard: {
+    backgroundColor: YarnyColors.card,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  commentMeta: {
+    fontFamily: YarnyFonts.body,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.border,
+    marginBottom: 2,
+    fontStyle: 'italic',
+  },
+  commentAuthor: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
+  },
+  commentBody: {
+    fontFamily: YarnyFonts.body,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
+    marginTop: 2,
+  },
+  emptyComments: {
+    fontFamily: YarnyFonts.body,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textPrimary,
+    textAlign: 'center',
+    marginVertical: 12,
+    fontStyle: 'italic',
   },
   errorText: {
     fontFamily: YarnyFonts.body,

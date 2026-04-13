@@ -9,6 +9,7 @@ const projectsRouter = require('./routes/projects');
 const pdfRouter = require('./routes/pdf');
 const progressRouter = require('./routes/progress');
 const uploadRouter = require('./routes/upload');
+const commentsRouter = require('./routes/comments');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/users', progressRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/projects', pdfRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api', commentsRouter);
 
 // 404 handler
 app.use((req, res) => {

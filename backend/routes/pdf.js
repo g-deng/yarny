@@ -44,40 +44,57 @@ router.post('/:id/parse-pdf', async (req, res) => {
     const pdfText = pdfData.text;
 
     console.log('--- PDF Text Length:', pdfText.length, 'characters ---');
+    console.log('--- Calling LLM... ---');
+    const startTime = Date.now();
 
-    // Send extracted text to Gemini for structuring
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // Send extracted text to OpenRouter for structuring
+    const response = await openrouter.chat.completions.create({
+      model: 'x-ai/grok-4.1-fast',
+      max_tokens: 16384,
+      messages: [
+        {
+          role: 'user',
+          content: `You are parsing a knitting/crochet pattern. Here is the text extracted from the PDF:\n\n${pdfText}\n\nExtract the pattern as structured JSON.
 
-    const response = await model.generateContent([
-      {
-        text: `You are parsing a knitting/crochet pattern. Here is the text extracted from the PDF:\n\n${pdfText}\n\nExtract the following as JSON:
+CRITICAL RULES FOR COUNTING ROWS:
+1. Every individual row the user must work is its own entry — not just unique row labels.
+2. When the pattern says "Repeat rows X and Y until you have N rows total" or "Repeat row X, N times", you MUST EXPAND this into N individual row entries. For example, "Repeat rows 2 and 3 until you have 11 rows" on a size that ends with 11 rows means output 9 more rows (rows 4, 5, 6, 7, 8, 9, 10, 11, 12, alternating the instructions from rows 2 and 3).
+3. If the pattern has multiple sizes (Small/Medium/Large), use the LARGEST size's counts to expand repeats.
+4. "position" is the GLOBAL 1-based index across the ENTIRE pattern. Row 1 of the first section is position 1, the last row of the last section is position N where N = total_rows.
+5. total_rows MUST equal the sum of all rows[] arrays across all sections. Count them before finalizing.
+6. row_number is the per-section row number (1, 2, 3...). It is required and must never be null. If a row is part of a repeat, give it the next sequential number within that section.
+7. Include EVERY section (setup, body, sleeves, edging, finishing rows, etc.) that has row-by-row instructions.
+
+Format:
 {
   "total_yards": <number or null>,
-  "total_rows": <number>,
+  "total_rows": <integer>,
   "sections": [
     {
       "title": "<section name>",
-      "position": <1-based>,
+      "position": <1-based section index>,
       "rows": [
-        {
-          "row_number": <number>,
-          "instruction": "<full instruction text>",
-          "position": <global 1-based position across entire pattern>
-        }
+        { "row_number": <integer>, "instruction": "<text>", "position": <global index> }
       ]
     }
   ]
 }
-Return ONLY valid JSON, no markdown fences, no explanation. If you are unsure about any of the fields, DO NOT RETURN NULL and estimate the value based on the text.`,
-      },
-    ]);
 
-    // Parse Gemini's response
-    let responseText = response.response.text().trim();
+Return ONLY valid JSON, no markdown fences, no explanation.`,
+        },
+      ],
+    });
+
+    console.log(`--- LLM returned in ${Date.now() - startTime}ms ---`);
+
+    // Parse OpenRouter's response
+    let responseText = response.choices[0].message.content.trim();
     if (responseText.startsWith('```')) {
       responseText = responseText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     }
+    console.log('--- LLM response length:', responseText.length, 'chars ---');
     const parsed = JSON.parse(responseText);
+    console.log(`--- Parsed: ${parsed.sections?.length ?? 0} sections, ${parsed.total_rows} total rows ---`);
 
     // Write to database in a transaction
     await client.query('BEGIN');
@@ -94,11 +111,15 @@ Return ONLY valid JSON, no markdown fences, no explanation. If you are unsure ab
       );
       const sectionId = sectionResult.rows[0].id;
 
+      let sectionRowIndex = 1;
       for (const row of section.rows) {
+        // Fallback to sequential number if LLM left row_number null
+        const rowNumber = row.row_number ?? sectionRowIndex;
         await client.query(
           'INSERT INTO rows (section_id, row_number, instruction, position) VALUES ($1, $2, $3, $4)',
-          [sectionId, row.row_number, row.instruction, row.position]
+          [sectionId, rowNumber, row.instruction, row.position]
         );
+        sectionRowIndex++;
       }
     }
 

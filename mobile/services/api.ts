@@ -131,6 +131,12 @@ export function advanceProgress(userId: string, projectId: string, rowsToAdd: nu
   });
 }
 
+export function restartProject(userId: string, projectId: string) {
+  return apiFetch<Progress>(`/api/users/${userId}/projects/${projectId}/restart`, {
+    method: 'POST',
+  });
+}
+
 // Add project to track
 export function addProjectToTrack(userId: string, projectId: string) {
   return apiFetch<any>(`/api/users/${userId}/projects/${projectId}/add`, {
@@ -141,6 +147,47 @@ export function addProjectToTrack(userId: string, projectId: string) {
 // Stop tracking a project
 export function removeProjectTracking(userId: string, projectId: string) {
   return apiFetch<any>(`/api/users/${userId}/projects/${projectId}/track`, {
+    method: 'DELETE',
+  });
+}
+
+// Comments
+export interface Comment {
+  id: string;
+  user_id: string;
+  project_id: string;
+  row_id: string | null;
+  body: string;
+  created_at: string;
+  username: string;
+}
+
+export interface InlineComment extends Comment {
+  row_number: number;
+  section_title: string;
+}
+
+export function createComment(projectId: string, data: { user_id: string; body: string; row_id?: string | null }) {
+  return apiFetch<Comment>(`/api/projects/${projectId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function getProjectComments(projectId: string) {
+  return apiFetch<Comment[]>(`/api/projects/${projectId}/comments`);
+}
+
+export function getInlineComments(projectId: string) {
+  return apiFetch<InlineComment[]>(`/api/projects/${projectId}/comments/inline`);
+}
+
+export function getRowComments(rowId: string) {
+  return apiFetch<Comment[]>(`/api/rows/${rowId}/comments`);
+}
+
+export function deleteComment(commentId: string) {
+  return apiFetch<{ message: string }>(`/api/comments/${commentId}`, {
     method: 'DELETE',
   });
 }

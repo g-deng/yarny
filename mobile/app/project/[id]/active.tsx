@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -15,8 +17,12 @@ import {
   getProjectDetail,
   getUserProjects,
   advanceProgress,
+  restartProject,
+  getRowComments,
+  createComment,
   type ProjectDetail,
   type Row,
+  type Comment,
 } from '@/services/api';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
@@ -30,6 +36,9 @@ export default function ActiveCrochetingScreen() {
   const [rowsCompleted, setRowsCompleted] = useState(0);
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState(false);
+  const [rowComments, setRowComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id || !userId) return;
@@ -68,6 +77,37 @@ export default function ActiveCrochetingScreen() {
   const currentRow = allRows[rowsCompleted] ?? null;
   const isComplete = project && rowsCompleted >= allRows.length;
 
+  // Fetch comments whenever the current row changes
+  useEffect(() => {
+    if (!currentRow) {
+      setRowComments([]);
+      return;
+    }
+    getRowComments(currentRow.id)
+      .then(setRowComments)
+      .catch((err) => console.error('Failed to load row comments:', err));
+  }, [currentRow?.id]);
+
+  const handlePostComment = async () => {
+    if (!userId || !id || !currentRow || !newComment.trim() || postingComment) return;
+    setPostingComment(true);
+    try {
+      const comment = await createComment(id, {
+        user_id: userId,
+        body: newComment.trim(),
+        row_id: currentRow.id,
+      });
+      // Optimistically add to list with a placeholder username
+      const commentWithUser: Comment = { ...comment, username: 'You' };
+      setRowComments((prev) => [commentWithUser, ...prev]);
+      setNewComment('');
+    } catch (err) {
+      console.error('Failed to post comment:', err);
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
   const handleNextRow = async () => {
     if (!userId || !id || advancing) return;
     setAdvancing(true);
@@ -76,6 +116,32 @@ export default function ActiveCrochetingScreen() {
       setRowsCompleted((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to advance:', err);
+    } finally {
+      setAdvancing(false);
+    }
+  };
+
+  const handlePreviousRow = async () => {
+    if (!userId || !id || advancing || rowsCompleted === 0) return;
+    setAdvancing(true);
+    try {
+      await advanceProgress(userId, id, -1);
+      setRowsCompleted((prev) => Math.max(prev - 1, 0));
+    } catch (err) {
+      console.error('Failed to go back:', err);
+    } finally {
+      setAdvancing(false);
+    }
+  };
+
+  const handleRestart = async () => {
+    if (!userId || !id || advancing) return;
+    setAdvancing(true);
+    try {
+      await restartProject(userId, id);
+      setRowsCompleted(0);
+    } catch (err) {
+      console.error('Failed to restart:', err);
     } finally {
       setAdvancing(false);
     }
@@ -113,39 +179,106 @@ export default function ActiveCrochetingScreen() {
       )}
 
       <View style={styles.bottomCard}>
-        {isComplete ? (
-          <Text style={styles.instruction}>Project complete!</Text>
-        ) : currentRow ? (
-          <>
-            <Text style={styles.sectionName}>Section: {currentRow.sectionTitle}</Text>
-            <Text style={styles.instruction}>
-              Row {currentRow.row_number}: {currentRow.instruction}
-            </Text>
-          </>
-        ) : (
-          <Text style={styles.instruction}>Upload a pattern to get started</Text>
-        )}
-
-        <TouchableOpacity
-          style={[styles.nextButton, (isComplete || !currentRow) && styles.buttonDisabled]}
-          onPress={handleNextRow}
-          disabled={isComplete || !currentRow || advancing}
-          activeOpacity={0.8}
-        >
-          {advancing ? (
-            <ActivityIndicator color={YarnyColors.textSecondary} />
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 12 }}>
+          {isComplete ? (
+            <Text style={styles.instruction}>Project complete!</Text>
+          ) : currentRow ? (
+            <>
+              <Text style={styles.sectionName}>Section: {currentRow.sectionTitle}</Text>
+              <Text style={styles.instruction}>
+                Row {currentRow.row_number}: {currentRow.instruction}
+              </Text>
+            </>
           ) : (
-            <Text style={styles.nextButtonText}>Next row</Text>
+            <Text style={styles.instruction}>Upload a pattern to get started</Text>
           )}
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.detailsButton}
-          onPress={() => router.push(`/project/${id}/details`)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.detailsButtonText}>Pattern details</Text>
-        </TouchableOpacity>
+          {currentRow && (
+            <View style={styles.commentsSection}>
+              {rowComments.length > 0 && (
+                <>
+                  <Text style={styles.commentsHeader}>Comments on this row</Text>
+                  {rowComments.map((c) => (
+                    <View key={c.id} style={styles.commentItem}>
+                      <Text style={styles.commentAuthor}>{c.username}</Text>
+                      <Text style={styles.commentBody}>{c.body}</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+              <View style={styles.commentInputRow}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Add a comment..."
+                  placeholderTextColor={YarnyColors.border}
+                  value={newComment}
+                  onChangeText={setNewComment}
+                  multiline
+                />
+                <TouchableOpacity
+                  style={[styles.commentPost, (!newComment.trim() || postingComment) && styles.buttonDisabled]}
+                  onPress={handlePostComment}
+                  disabled={!newComment.trim() || postingComment}
+                >
+                  {postingComment ? (
+                    <ActivityIndicator size="small" color={YarnyColors.textSecondary} />
+                  ) : (
+                    <Text style={styles.commentPostText}>Post</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Fixed bottom navigation */}
+        <View style={styles.footerNav}>
+          {isComplete ? (
+            <TouchableOpacity
+              style={[styles.nextButton, advancing && styles.buttonDisabled]}
+              onPress={handleRestart}
+              disabled={advancing}
+              activeOpacity={0.8}
+            >
+              {advancing ? (
+                <ActivityIndicator color={YarnyColors.textSecondary} />
+              ) : (
+                <Text style={styles.nextButtonText}>Restart project</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.rowButtons}>
+              <TouchableOpacity
+                style={[styles.prevButton, (rowsCompleted === 0 || advancing) && styles.buttonDisabled]}
+                onPress={handlePreviousRow}
+                disabled={rowsCompleted === 0 || advancing || !currentRow}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.prevButtonText}>Previous</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.nextButton, { flex: 1, marginBottom: 0 }, !currentRow && styles.buttonDisabled]}
+                onPress={handleNextRow}
+                disabled={!currentRow || advancing}
+                activeOpacity={0.8}
+              >
+                {advancing ? (
+                  <ActivityIndicator color={YarnyColors.textSecondary} />
+                ) : (
+                  <Text style={styles.nextButtonText}>Next row</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.detailsButton}
+            onPress={() => router.push(`/project/${id}/details`)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.detailsButtonText}>Pattern details</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -179,8 +312,70 @@ const styles = StyleSheet.create({
     backgroundColor: YarnyColors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    maxHeight: '60%',
+  },
+  footerNav: {
     padding: 20,
-    paddingBottom: 32,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: YarnyColors.border,
+  },
+  commentsSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: YarnyColors.border,
+  },
+  commentsHeader: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.textSecondary,
+    marginBottom: 8,
+  },
+  commentItem: {
+    backgroundColor: YarnyColors.background,
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 6,
+  },
+  commentAuthor: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.textPrimary,
+  },
+  commentBody: {
+    fontFamily: YarnyFonts.body,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.textPrimary,
+    marginTop: 2,
+  },
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    marginTop: 8,
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: YarnyColors.background,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontFamily: YarnyFonts.body,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.textPrimary,
+    maxHeight: 80,
+  },
+  commentPost: {
+    backgroundColor: YarnyColors.button,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  commentPostText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.textSecondary,
   },
   sectionName: {
     fontFamily: YarnyFonts.body,
@@ -195,6 +390,11 @@ const styles = StyleSheet.create({
     color: YarnyColors.textSecondary,
     marginBottom: 16,
   },
+  rowButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
   nextButton: {
     backgroundColor: YarnyColors.button,
     borderRadius: 24,
@@ -203,6 +403,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   nextButtonText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
+  },
+  prevButton: {
+    borderWidth: 2,
+    borderColor: YarnyColors.textSecondary,
+    borderRadius: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prevButtonText: {
     fontFamily: YarnyFonts.bodySemiBold,
     fontSize: YarnySizes.body,
     color: YarnyColors.textSecondary,

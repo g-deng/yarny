@@ -82,7 +82,7 @@ router.post('/:userId/projects/:id/add', async (req, res) => {
   }
 });
 
-// PATCH /api/users/:userId/projects/:id/progress — increment progress
+// PATCH /api/users/:userId/projects/:id/progress — increment/decrement progress
 router.patch('/:userId/projects/:id/progress', async (req, res) => {
   const client = await pool.connect();
 
@@ -92,12 +92,12 @@ router.patch('/:userId/projects/:id/progress', async (req, res) => {
 
     await client.query('BEGIN');
 
-    // Upsert progress
+    // Upsert progress (clamped to >= 0)
     const progressResult = await client.query(
       `INSERT INTO progress (user_id, project_id, rows_completed, updated_at)
-       VALUES ($1, $2, $3, NOW())
+       VALUES ($1, $2, GREATEST($3, 0), NOW())
        ON CONFLICT (user_id, project_id)
-       DO UPDATE SET rows_completed = progress.rows_completed + $3,
+       DO UPDATE SET rows_completed = GREATEST(progress.rows_completed + $3, 0),
                      updated_at = NOW()
        RETURNING *`,
       [userId, projectId, rows_to_add]
@@ -118,7 +118,7 @@ router.patch('/:userId/projects/:id/progress', async (req, res) => {
       [nextRowId, progress.id]
     );
 
-    // Append to progress log
+    // Log both forward and backward movement so stats can't be gamed
     await client.query(
       'INSERT INTO progress_log (user_id, project_id, rows_added) VALUES ($1, $2, $3)',
       [userId, projectId, rows_to_add]
@@ -137,6 +137,26 @@ router.patch('/:userId/projects/:id/progress', async (req, res) => {
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
+  }
+});
+
+// POST /api/users/:userId/projects/:id/restart — reset progress to 0
+router.post('/:userId/projects/:id/restart', async (req, res) => {
+  try {
+    const { userId, id: projectId } = req.params;
+    const result = await pool.query(
+      `UPDATE progress
+       SET rows_completed = 0, current_row_id = NULL, updated_at = NOW()
+       WHERE user_id = $1 AND project_id = $2
+       RETURNING *`,
+      [userId, projectId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Progress record not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
