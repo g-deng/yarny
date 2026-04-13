@@ -41,7 +41,7 @@ function formatLastWorked(dateStr: string | null): string {
 }
 
 export default function ProjectDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const { userId } = useUser();
   const router = useRouter();
 
@@ -157,11 +157,17 @@ export default function ProjectDetailScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() =>
-            isOwnProject || isTracking
-              ? router.replace(`/project/${id}/active`)
-              : router.replace('/(tabs)/search')
-          }
+          onPress={() => {
+            if (from === 'search') {
+              router.replace('/(tabs)/search');
+            } else if (from === 'profile') {
+              router.replace('/(tabs)/profile');
+            } else if (isOwnProject || isTracking) {
+              router.replace(`/project/${id}/active`);
+            } else {
+              router.replace('/(tabs)/search');
+            }
+          }}
           style={styles.backButton}
         >
           <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />

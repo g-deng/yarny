@@ -27,10 +27,10 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="welcome" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="new-project" />
         <Stack.Screen name="project/[id]/active" />
         <Stack.Screen name="project/[id]/details" />
         <Stack.Screen name="project/[id]/pdf" />
+        <Stack.Screen name="edit-profile" />
       </Stack>
       <StatusBar style="auto" />
     </>
@@ -39,10 +39,9 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    'MarkoOne-Regular': require('../assets/fonts/MarkoOne-Regular.ttf'),
-    'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
-    'Montserrat-SemiBold': require('../assets/fonts/Montserrat-SemiBold.ttf'),
-    'Montserrat-Bold': require('../assets/fonts/Montserrat-Bold.ttf'),
+    'Montserrat-Regular': require('@expo-google-fonts/montserrat/400Regular/Montserrat_400Regular.ttf'),
+    'Montserrat-SemiBold': require('@expo-google-fonts/montserrat/600SemiBold/Montserrat_600SemiBold.ttf'),
+    'Montserrat-Bold': require('@expo-google-fonts/montserrat/700Bold/Montserrat_700Bold.ttf'),
   });
 
   useEffect(() => {

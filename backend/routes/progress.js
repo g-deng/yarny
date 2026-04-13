@@ -19,12 +19,13 @@ router.get('/:userId/projects', async (req, res) => {
       [userId]
     );
 
-    // Derive yards_used for each project
+    // Derive yards_used for each project.
+    // Fall back to ~2 yards per row estimate when total_yards is missing.
     const projects = result.rows.map((p) => {
       const yardsUsed =
         p.total_rows > 0 && p.total_yards
           ? (p.rows_completed / p.total_rows) * Number(p.total_yards)
-          : 0;
+          : p.rows_completed * 2;
       return { ...p, yards_used: Math.round(yardsUsed * 100) / 100 };
     });
 
@@ -160,6 +161,42 @@ router.post('/:userId/projects/:id/restart', async (req, res) => {
   }
 });
 
+// GET /api/users/:userId/activity-log — recent activity, consecutive same-project entries aggregated
+router.get('/:userId/activity-log', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await pool.query(
+      `WITH numbered AS (
+         SELECT pl.project_id, pl.rows_added, pl.logged_at, p.title AS project_title,
+           ROW_NUMBER() OVER (ORDER BY pl.logged_at DESC) AS rn_all,
+           ROW_NUMBER() OVER (PARTITION BY pl.project_id ORDER BY pl.logged_at DESC) AS rn_proj
+         FROM progress_log pl
+         JOIN projects p ON pl.project_id = p.id
+         WHERE pl.user_id = $1
+       )
+       SELECT project_id, project_title,
+              SUM(rows_added) AS rows_added,
+              MAX(logged_at) AS logged_at
+       FROM numbered
+       GROUP BY (rn_all - rn_proj), project_id, project_title
+       HAVING SUM(rows_added) > 0
+       ORDER BY MAX(logged_at) DESC
+       LIMIT 50`,
+      [userId]
+    );
+    res.json(
+      result.rows.map((r) => ({
+        project_id: r.project_id,
+        project_title: r.project_title,
+        rows_added: Number(r.rows_added),
+        logged_at: r.logged_at,
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/users/:userId/stats — aggregated stats
 router.get('/:userId/stats', async (req, res) => {
   try {
@@ -176,12 +213,15 @@ router.get('/:userId/stats', async (req, res) => {
       [userId]
     );
 
-    // Yards used from progress + projects
+    // Yards used from progress + projects.
+    // If total_yards is set, use proportional calc; otherwise estimate ~2 yards per row.
     const yardStats = await pool.query(
       `SELECT COALESCE(SUM(
-        CASE WHEN p.total_rows > 0
-        THEN (CAST(pr.rows_completed AS numeric) / p.total_rows) * COALESCE(p.total_yards, 0)
-        ELSE 0 END
+        CASE
+          WHEN p.total_yards IS NOT NULL AND p.total_rows > 0
+            THEN (CAST(pr.rows_completed AS numeric) / p.total_rows) * p.total_yards
+          ELSE CAST(pr.rows_completed AS numeric) * 2
+        END
        ), 0) AS used
        FROM progress pr
        JOIN projects p ON p.id = pr.project_id

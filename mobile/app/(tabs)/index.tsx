@@ -63,7 +63,7 @@ export default function HomeScreen() {
         <View style={styles.emptyState}>
           <TouchableOpacity
             style={styles.newButton}
-            onPress={() => router.push('/new-project')}
+            onPress={() => router.push('/(tabs)/create')}
             activeOpacity={0.8}
           >
             <Text style={styles.newButtonText}>New project</Text>

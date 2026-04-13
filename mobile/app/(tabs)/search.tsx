@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,21 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { getPublicProjects, type ProjectWithUser } from '@/services/api';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
 
 export default function SearchScreen() {
   const [projects, setProjects] = useState<ProjectWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState('');
   const router = useRouter();
 
   const fetchProjects = useCallback(async () => {
@@ -38,52 +41,80 @@ export default function SearchScreen() {
     }, [fetchProjects])
   );
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Search</Text>
-        </View>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
-      </SafeAreaView>
+  const filteredProjects = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.username.toLowerCase().includes(q)
     );
-  }
+  }, [projects, query]);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Search</Text>
       </View>
-      <FlatList
-        data={projects}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        refreshing={refreshing}
-        onRefresh={() => {
-          setRefreshing(true);
-          fetchProjects();
-        }}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No public projects yet</Text>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push(`/project/${item.id}/details`)}
-            activeOpacity={0.8}
-          >
-            {item.image_url ? (
-              <Image source={{ uri: item.image_url }} style={styles.cardImage} />
-            ) : (
-              <View style={[styles.cardImage, { backgroundColor: YarnyColors.border }]} />
-            )}
-            <View style={styles.cardInfo}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardAuthor}>by {item.username}</Text>
-            </View>
+
+      <View style={styles.searchBar}>
+        <IconSymbol name="magnifyingglass" size={18} color={YarnyColors.border} />
+        <TextInput
+          style={styles.searchInput}
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search patterns or users..."
+          placeholderTextColor={YarnyColors.card}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+        />
+        {query.length > 0 && (
+          <TouchableOpacity onPress={() => setQuery('')}>
+            <Text style={styles.clearText}>Clear</Text>
           </TouchableOpacity>
         )}
-      />
+      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+      ) : (
+        <FlatList
+          data={filteredProjects}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            fetchProjects();
+          }}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+              {query.trim()
+                ? `No projects match "${query}"`
+                : 'No public projects yet'}
+            </Text>
+          }
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => router.push(`/project/${item.id}/details?from=search`)}
+              activeOpacity={0.8}
+            >
+              {item.image_url ? (
+                <Image source={{ uri: item.image_url }} style={styles.cardImage} />
+              ) : (
+                <View style={[styles.cardImage, { backgroundColor: YarnyColors.border }]} />
+              )}
+              <View style={styles.cardInfo}>
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardAuthor}>by {item.username}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -102,6 +133,29 @@ const styles = StyleSheet.create({
     fontFamily: YarnyFonts.header,
     fontSize: YarnySizes.subtitle,
     color: YarnyColors.textSecondary,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: YarnyColors.border,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingRight: 12,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: YarnyFonts.body,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textPrimary,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+  },
+  clearText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.button,
   },
   list: {
     padding: 16,

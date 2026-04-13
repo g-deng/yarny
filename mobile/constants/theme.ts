@@ -38,7 +38,7 @@ export const YarnyColors = {
 };
 
 export const YarnyFonts = {
-  header: 'MarkoOne-Regular',
+  header: 'Montserrat-SemiBold',
   body: 'Montserrat-Regular',
   bodySemiBold: 'Montserrat-SemiBold',
   bodyBold: 'Montserrat-Bold',

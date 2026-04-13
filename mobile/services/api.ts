@@ -4,6 +4,8 @@ import { API_BASE_URL } from '@/constants/api';
 export interface User {
   id: string;
   username: string;
+  profile_photo_url: string | null;
+  bio: string | null;
   created_at: string;
 }
 
@@ -90,6 +92,17 @@ export function getUser(userId: string) {
 
 export function getUserByUsername(username: string) {
   return apiFetch<User>(`/api/users/by-username/${encodeURIComponent(username)}`);
+}
+
+export function updateUser(userId: string, data: { profile_photo_url?: string | null; bio?: string | null }) {
+  return apiFetch<User>(`/api/users/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export function getUserPublicProjects(userId: string) {
+  return apiFetch<Project[]>(`/api/users/${userId}/public-projects`);
 }
 
 // Projects
@@ -195,6 +208,17 @@ export function deleteComment(commentId: string) {
 // Stats
 export function getUserStats(userId: string) {
   return apiFetch<UserStats>(`/api/users/${userId}/stats`);
+}
+
+export interface ActivityLogEntry {
+  project_id: string;
+  project_title: string;
+  rows_added: number;
+  logged_at: string;
+}
+
+export function getActivityLog(userId: string) {
+  return apiFetch<ActivityLogEntry[]>(`/api/users/${userId}/activity-log`);
 }
 
 // Uploads — image goes directly to Supabase Storage from the client

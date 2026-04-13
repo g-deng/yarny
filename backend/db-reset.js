@@ -20,9 +20,11 @@ async function resetDatabase() {
     // Re-run init
     await pool.query(`
       CREATE TABLE users (
-        id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        username    text UNIQUE NOT NULL,
-        created_at  timestamptz DEFAULT now()
+        id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        username           text UNIQUE NOT NULL,
+        profile_photo_url  text,
+        bio                text,
+        created_at         timestamptz DEFAULT now()
       );
 
       CREATE TABLE projects (

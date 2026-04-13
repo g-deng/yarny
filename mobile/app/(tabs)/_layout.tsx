@@ -1,4 +1,4 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -6,8 +6,6 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { YarnyColors } from '@/constants/theme';
 
 export default function TabLayout() {
-  const router = useRouter();
-
   return (
     <Tabs
       screenOptions={{
@@ -39,12 +37,6 @@ export default function TabLayout() {
         options={{
           title: '',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="plus" color={color} />,
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            router.push('/new-project');
-          },
         }}
       />
       <Tabs.Screen

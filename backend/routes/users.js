@@ -47,4 +47,42 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
+// PATCH /api/users/:userId — update user profile (photo, bio)
+router.patch('/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { profile_photo_url, bio } = req.body;
+    const result = await pool.query(
+      `UPDATE users
+       SET profile_photo_url = COALESCE($1, profile_photo_url),
+           bio = COALESCE($2, bio)
+       WHERE id = $3
+       RETURNING *`,
+      [profile_photo_url ?? null, bio ?? null, userId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/users/:userId/public-projects — list a user's public projects
+router.get('/:userId/public-projects', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await pool.query(
+      `SELECT * FROM projects
+       WHERE user_id = $1 AND is_public = true
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
