@@ -156,7 +156,14 @@ export default function ProjectDetailScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace(`/project/${id}/active`)} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() =>
+            isOwnProject || isTracking
+              ? router.replace(`/project/${id}/active`)
+              : router.replace('/(tabs)/search')
+          }
+          style={styles.backButton}
+        >
           <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{project.title}</Text>
@@ -191,6 +198,17 @@ export default function ProjectDetailScreen() {
             ) : (
               <Text style={styles.removeButtonText}>Stop tracking</Text>
             )}
+          </TouchableOpacity>
+        )}
+
+        {/* View PDF button */}
+        {project.pdf_url && (
+          <TouchableOpacity
+            style={styles.viewPdfButton}
+            onPress={() => router.push(`/project/${id}/pdf`)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.viewPdfButtonText}>View pattern PDF</Text>
           </TouchableOpacity>
         )}
 
@@ -330,6 +348,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 16,
+  },
+  viewPdfButton: {
+    borderWidth: 2,
+    borderColor: YarnyColors.button,
+    borderRadius: 24,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  viewPdfButtonText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.button,
   },
   removeButtonText: {
     fontFamily: YarnyFonts.bodySemiBold,
