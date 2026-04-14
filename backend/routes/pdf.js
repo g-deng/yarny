@@ -49,7 +49,7 @@ router.post('/:id/parse-pdf', async (req, res) => {
 
     // Send extracted text to OpenRouter for structuring
     const response = await openrouter.chat.completions.create({
-      model: 'x-ai/grok-4.1-fast',
+      model: 'google/gemini-3-flash-preview',
       max_tokens: 16384,
       messages: [
         {

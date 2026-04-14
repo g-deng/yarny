@@ -12,6 +12,9 @@ interface ProjectCardProps {
   lastWorkedAt: string | null;
   isPublic: boolean;
   onPress: () => void;
+  onLongPress?: () => void;
+  selectionMode?: boolean;
+  selected?: boolean;
 }
 
 function formatLastWorked(dateStr: string | null): string {
@@ -33,9 +36,25 @@ export function ProjectCard({
   lastWorkedAt,
   isPublic,
   onPress,
+  onLongPress,
+  selectionMode = false,
+  selected = false,
 }: ProjectCardProps) {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={[styles.card, selected && styles.cardSelected]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
+      activeOpacity={0.8}
+    >
+      {selectionMode && (
+        <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+          {selected && (
+            <IconSymbol name="checkmark" size={16} color={YarnyColors.textSecondary} />
+          )}
+        </View>
+      )}
       {imageUrl ? (
         <Image source={{ uri: imageUrl }} style={styles.image} />
       ) : (
@@ -68,6 +87,25 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  cardSelected: {
+    borderColor: YarnyColors.button,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: YarnyColors.textSecondary,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: YarnyColors.button,
+    borderColor: YarnyColors.button,
   },
   image: {
     width: 90,

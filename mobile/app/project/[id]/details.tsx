@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,8 @@ import {
   getUserProjects,
   addProjectToTrack,
   removeProjectTracking,
+  deleteProject,
+  publishProject,
   getProjectComments,
   getInlineComments,
   createComment,
@@ -47,9 +50,9 @@ export default function ProjectDetailScreen() {
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [rowsCompleted, setRowsCompleted] = useState(0);
-  const [isTracking, setIsTracking] = useState(false);
+  const [inLibrary, setInLibrary] = useState(false);
   const [isOwnProject, setIsOwnProject] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [projectComments, setProjectComments] = useState<Comment[]>([]);
   const [inlineComments, setInlineComments] = useState<InlineComment[]>([]);
@@ -62,7 +65,7 @@ export default function ProjectDetailScreen() {
       (async () => {
         try {
           const [detail, userProjects, projectCs, inlineCs] = await Promise.all([
-            getProjectDetail(id),
+            getProjectDetail(id, userId),
             getUserProjects(userId),
             getProjectComments(id),
             getInlineComments(id),
@@ -71,7 +74,7 @@ export default function ProjectDetailScreen() {
           setIsOwnProject(detail.user_id === userId);
           const myProject = userProjects.find((p) => p.id === id);
           setRowsCompleted(myProject?.rows_completed ?? 0);
-          setIsTracking(!!myProject);
+          setInLibrary(!!myProject);
           setProjectComments(projectCs);
           setInlineComments(inlineCs);
         } catch (err) {
@@ -83,30 +86,111 @@ export default function ProjectDetailScreen() {
     }, [id, userId])
   );
 
-  const handleAddProject = async () => {
+  const handleAddToLibrary = async () => {
     if (!userId || !id) return;
-    setAdding(true);
+    setBusy(true);
     try {
       await addProjectToTrack(userId, id);
-      setIsTracking(true);
+      setInLibrary(true);
     } catch (err) {
       console.error('Failed to add project:', err);
+      Alert.alert('Could not add to library', (err as Error).message);
     } finally {
-      setAdding(false);
+      setBusy(false);
     }
   };
 
-  const handleRemoveProject = async () => {
+  const doDeleteLocalOnly = async () => {
     if (!userId || !id) return;
-    setAdding(true);
+    setBusy(true);
     try {
       await removeProjectTracking(userId, id);
-      setIsTracking(false);
+      setInLibrary(false);
+      router.replace('/(tabs)');
     } catch (err) {
-      console.error('Failed to remove project:', err);
+      console.error('Failed to remove from library:', err);
+      Alert.alert('Could not delete', (err as Error).message);
     } finally {
-      setAdding(false);
+      setBusy(false);
     }
+  };
+
+  const doDeleteOwned = async () => {
+    if (!userId || !id) return;
+    setBusy(true);
+    try {
+      const result = await deleteProject(id, userId);
+      if (result.kept_global) {
+        Alert.alert(
+          'Removed from your library',
+          'Your project is still public for the community.'
+        );
+      }
+      router.replace('/(tabs)');
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+      Alert.alert('Could not delete', (err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = () => {
+    if (!project) return;
+    if (isOwnProject && !project.is_public) {
+      Alert.alert(
+        'Delete project?',
+        "This will permanently delete this project and your progress. This can't be undone.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: doDeleteOwned },
+        ]
+      );
+    } else if (isOwnProject && project.is_public) {
+      Alert.alert(
+        'Remove from your library?',
+        "This project will stay public for the community. We'll remove it from your library and reset your progress.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: doDeleteOwned },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Remove from your library?',
+        'Your progress on this project will be deleted.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: doDeleteLocalOnly },
+        ]
+      );
+    }
+  };
+
+  const handlePublish = () => {
+    if (!userId || !id) return;
+    Alert.alert(
+      'Publish this project?',
+      'Publishing is permanent. Other users will be able to add this project to their library.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Publish',
+          onPress: async () => {
+            setBusy(true);
+            try {
+              const updated = await publishProject(id, userId);
+              setProject((prev) => (prev ? { ...prev, is_public: updated.is_public } : prev));
+            } catch (err) {
+              console.error('Failed to publish project:', err);
+              Alert.alert('Could not publish', (err as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handlePostComment = async () => {
@@ -162,7 +246,7 @@ export default function ProjectDetailScreen() {
               router.replace('/(tabs)/search');
             } else if (from === 'profile') {
               router.replace('/(tabs)/profile');
-            } else if (isOwnProject || isTracking) {
+            } else if (isOwnProject || inLibrary) {
               router.replace(`/project/${id}/active`);
             } else {
               router.replace('/(tabs)/search');
@@ -176,34 +260,45 @@ export default function ProjectDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Add to my projects button */}
-        {!isOwnProject && !isTracking && (
+        {/* Library / delete / publish buttons */}
+        {!isOwnProject && !inLibrary && (
           <TouchableOpacity
-            style={[styles.addButton, adding && styles.addButtonDisabled]}
-            onPress={handleAddProject}
-            disabled={adding}
+            style={[styles.addButton, busy && styles.addButtonDisabled]}
+            onPress={handleAddToLibrary}
+            disabled={busy}
             activeOpacity={0.8}
           >
-            {adding ? (
+            {busy ? (
               <ActivityIndicator color={YarnyColors.textSecondary} />
             ) : (
-              <Text style={styles.addButtonText}>Add to my projects</Text>
+              <Text style={styles.addButtonText}>Add to library</Text>
             )}
           </TouchableOpacity>
         )}
 
-        {!isOwnProject && isTracking && (
+        {(isOwnProject || inLibrary) && (
           <TouchableOpacity
-            style={[styles.removeButton, adding && styles.addButtonDisabled]}
-            onPress={handleRemoveProject}
-            disabled={adding}
+            style={[styles.removeButton, busy && styles.addButtonDisabled]}
+            onPress={handleDelete}
+            disabled={busy}
             activeOpacity={0.8}
           >
-            {adding ? (
+            {busy ? (
               <ActivityIndicator color={YarnyColors.button} />
             ) : (
-              <Text style={styles.removeButtonText}>Stop tracking</Text>
+              <Text style={styles.removeButtonText}>Delete</Text>
             )}
+          </TouchableOpacity>
+        )}
+
+        {isOwnProject && !project.is_public && (
+          <TouchableOpacity
+            style={[styles.addButton, busy && styles.addButtonDisabled]}
+            onPress={handlePublish}
+            disabled={busy}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.addButtonText}>Make public</Text>
           </TouchableOpacity>
         )}
 

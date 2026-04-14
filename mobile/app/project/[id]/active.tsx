@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TextInput,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -40,11 +41,19 @@ export default function ActiveCrochetingScreen() {
   const [newComment, setNewComment] = useState('');
   const [postingComment, setPostingComment] = useState(false);
 
+  // Pin / annotation state
+  const [imageAspect, setImageAspect] = useState(1);
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number } | null>(null);
+  const [addMode, setAddMode] = useState(false);
+  const [pendingCoords, setPendingCoords] = useState<{ x: number; y: number } | null>(null);
+  const [skipPin, setSkipPin] = useState(false);
+  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     if (!id || !userId) return;
     try {
       const [detail, userProjects] = await Promise.all([
-        getProjectDetail(id),
+        getProjectDetail(id, userId),
         getUserProjects(userId),
       ]);
       setProject(detail);
@@ -77,8 +86,14 @@ export default function ActiveCrochetingScreen() {
   const currentRow = allRows[rowsCompleted] ?? null;
   const isComplete = project && rowsCompleted >= allRows.length;
 
-  // Fetch comments whenever the current row changes
+  // Fetch comments whenever the current row changes. Also reset any in-flight
+  // pin placement and selection, since pins are per-row.
   useEffect(() => {
+    setAddMode(false);
+    setPendingCoords(null);
+    setSkipPin(false);
+    setSelectedCommentId(null);
+    setNewComment('');
     if (!currentRow) {
       setRowComments([]);
       return;
@@ -88,6 +103,34 @@ export default function ActiveCrochetingScreen() {
       .catch((err) => console.error('Failed to load row comments:', err));
   }, [currentRow?.id]);
 
+  const handleImageTap = (e: any) => {
+    if (!addMode || !containerSize) return;
+    const { locationX, locationY } = e.nativeEvent;
+    const x = Math.min(1, Math.max(0, locationX / containerSize.w));
+    const y = Math.min(1, Math.max(0, locationY / containerSize.h));
+    setPendingCoords({ x, y });
+    setSelectedCommentId(null);
+  };
+
+  const startAddComment = () => {
+    setAddMode(true);
+    setPendingCoords(null);
+    setSkipPin(false);
+    setSelectedCommentId(null);
+    setNewComment('');
+    // Projects without an image have no pinning stage — jump straight to composer.
+    if (!project?.image_url) setSkipPin(true);
+  };
+
+  const cancelAddComment = () => {
+    setAddMode(false);
+    setPendingCoords(null);
+    setSkipPin(false);
+    setNewComment('');
+  };
+
+  const composerOpen = addMode && (pendingCoords !== null || skipPin);
+
   const handlePostComment = async () => {
     if (!userId || !id || !currentRow || !newComment.trim() || postingComment) return;
     setPostingComment(true);
@@ -96,11 +139,17 @@ export default function ActiveCrochetingScreen() {
         user_id: userId,
         body: newComment.trim(),
         row_id: currentRow.id,
+        ...(pendingCoords
+          ? { image_x: pendingCoords.x, image_y: pendingCoords.y }
+          : {}),
       });
       // Optimistically add to list with a placeholder username
       const commentWithUser: Comment = { ...comment, username: 'You' };
       setRowComments((prev) => [commentWithUser, ...prev]);
       setNewComment('');
+      setPendingCoords(null);
+      setSkipPin(false);
+      setAddMode(false);
     } catch (err) {
       console.error('Failed to post comment:', err);
     } finally {
@@ -173,7 +222,77 @@ export default function ActiveCrochetingScreen() {
       </View>
 
       {project.image_url ? (
-        <Image source={{ uri: project.image_url }} style={styles.projectImage} contentFit="cover" />
+        <View style={styles.imageWrap}>
+          <Pressable
+            onPress={handleImageTap}
+            onLayout={(e) =>
+              setContainerSize({
+                w: e.nativeEvent.layout.width,
+                h: e.nativeEvent.layout.height,
+              })
+            }
+            style={[styles.imageContainer, { aspectRatio: imageAspect }]}
+          >
+            <Image
+              source={{ uri: project.image_url }}
+              style={StyleSheet.absoluteFill}
+              contentFit="contain"
+              onLoad={(ev: any) => {
+                const w = ev?.source?.width;
+                const h = ev?.source?.height;
+                if (w && h) setImageAspect(w / h);
+              }}
+            />
+            {rowComments
+              .filter((c) => c.image_x !== null && c.image_y !== null)
+              .map((c) => {
+                const isActive = c.id === selectedCommentId;
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    onPress={() => {
+                      setSelectedCommentId(c.id);
+                      setPendingCoords(null);
+                    }}
+                    style={[
+                      styles.pin,
+                      isActive && styles.pinActive,
+                      {
+                        left: `${(c.image_x ?? 0) * 100}%`,
+                        top: `${(c.image_y ?? 0) * 100}%`,
+                      },
+                    ]}
+                  />
+                );
+              })}
+            {pendingCoords && (
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.pin,
+                  styles.pinPending,
+                  {
+                    left: `${pendingCoords.x * 100}%`,
+                    top: `${pendingCoords.y * 100}%`,
+                  },
+                ]}
+              />
+            )}
+          </Pressable>
+          {addMode && !pendingCoords && !skipPin && (
+            <View style={styles.addBanner}>
+              <Text style={styles.addBannerText}>Tap the image to pin your comment</Text>
+              <View style={styles.addBannerActions}>
+                <TouchableOpacity onPress={() => setSkipPin(true)}>
+                  <Text style={styles.addBannerAction}>No pin</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={cancelAddComment}>
+                  <Text style={[styles.addBannerAction, styles.addBannerCancel]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
       ) : (
         <View style={[styles.projectImage, { backgroundColor: YarnyColors.border }]} />
       )}
@@ -198,35 +317,66 @@ export default function ActiveCrochetingScreen() {
               {rowComments.length > 0 && (
                 <>
                   <Text style={styles.commentsHeader}>Comments on this row</Text>
-                  {rowComments.map((c) => (
-                    <View key={c.id} style={styles.commentItem}>
-                      <Text style={styles.commentAuthor}>{c.username}</Text>
-                      <Text style={styles.commentBody}>{c.body}</Text>
-                    </View>
-                  ))}
+                  {rowComments.map((c) => {
+                    const isSelected = c.id === selectedCommentId;
+                    const hasPin = c.image_x !== null && c.image_y !== null;
+                    return (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={[styles.commentItem, isSelected && styles.commentItemSelected]}
+                        onPress={() => setSelectedCommentId(c.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.commentHeaderRow}>
+                          <Text style={styles.commentAuthor}>{c.username}</Text>
+                          {hasPin && <Text style={styles.commentPinBadge}>📍</Text>}
+                        </View>
+                        <Text style={styles.commentBody}>{c.body}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </>
               )}
-              <View style={styles.commentInputRow}>
-                <TextInput
-                  style={styles.commentInput}
-                  placeholder="Add a comment..."
-                  placeholderTextColor={YarnyColors.border}
-                  value={newComment}
-                  onChangeText={setNewComment}
-                  multiline
-                />
+
+              {!addMode && (
                 <TouchableOpacity
-                  style={[styles.commentPost, (!newComment.trim() || postingComment) && styles.buttonDisabled]}
-                  onPress={handlePostComment}
-                  disabled={!newComment.trim() || postingComment}
+                  style={styles.addCommentButton}
+                  onPress={startAddComment}
+                  activeOpacity={0.8}
                 >
-                  {postingComment ? (
-                    <ActivityIndicator size="small" color={YarnyColors.textSecondary} />
-                  ) : (
-                    <Text style={styles.commentPostText}>Post</Text>
-                  )}
+                  <Text style={styles.addCommentButtonText}>Add a comment</Text>
                 </TouchableOpacity>
-              </View>
+              )}
+
+              {composerOpen && (
+                <View style={styles.commentInputRow}>
+                  <TextInput
+                    style={styles.commentInput}
+                    placeholder={pendingCoords ? 'Write your pinned comment...' : 'Write your comment...'}
+                    placeholderTextColor={YarnyColors.border}
+                    value={newComment}
+                    onChangeText={setNewComment}
+                    multiline
+                    autoFocus
+                  />
+                  <View style={styles.composerButtons}>
+                    <TouchableOpacity
+                      style={[styles.commentPost, (!newComment.trim() || postingComment) && styles.buttonDisabled]}
+                      onPress={handlePostComment}
+                      disabled={!newComment.trim() || postingComment}
+                    >
+                      {postingComment ? (
+                        <ActivityIndicator size="small" color={YarnyColors.textSecondary} />
+                      ) : (
+                        <Text style={styles.commentPostText}>Post</Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={cancelAddComment} disabled={postingComment}>
+                      <Text style={styles.composerCancel}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           )}
         </ScrollView>
@@ -308,6 +458,72 @@ const styles = StyleSheet.create({
     width: '100%',
     flex: 1,
   },
+  imageWrap: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'center',
+  },
+  imageContainer: {
+    width: '100%',
+    maxHeight: '100%',
+    alignSelf: 'center',
+    backgroundColor: YarnyColors.border,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  pin: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: YarnyColors.button,
+    borderWidth: 2,
+    borderColor: YarnyColors.textSecondary,
+    marginLeft: -9,
+    marginTop: -9,
+  },
+  pinActive: {
+    backgroundColor: YarnyColors.textSecondary,
+    borderColor: YarnyColors.button,
+    transform: [{ scale: 1.3 }],
+  },
+  pinPending: {
+    backgroundColor: 'transparent',
+    borderColor: YarnyColors.button,
+    borderStyle: 'dashed',
+  },
+  addBanner: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    top: 12,
+    backgroundColor: YarnyColors.button,
+    borderRadius: 12,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  addBannerText: {
+    flex: 1,
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: 13,
+    color: YarnyColors.textSecondary,
+  },
+  addBannerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addBannerAction: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: 13,
+    color: YarnyColors.textSecondary,
+    textDecorationLine: 'underline',
+  },
+  addBannerCancel: {
+    opacity: 0.8,
+  },
   bottomCard: {
     backgroundColor: YarnyColors.card,
     borderTopLeftRadius: 20,
@@ -337,10 +553,44 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 8,
     marginBottom: 6,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  commentItemSelected: {
+    borderColor: YarnyColors.button,
+  },
+  commentHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   commentAuthor: {
     fontFamily: YarnyFonts.bodySemiBold,
     fontSize: YarnySizes.caption,
+    color: YarnyColors.textPrimary,
+  },
+  commentPinBadge: {
+    fontSize: 12,
+  },
+  addCommentButton: {
+    backgroundColor: YarnyColors.button,
+    borderRadius: 20,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addCommentButtonText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.textSecondary,
+  },
+  composerButtons: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  composerCancel: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: 12,
     color: YarnyColors.textPrimary,
   },
   commentBody: {

@@ -22,6 +22,8 @@ const MAPPING = {
   'plus': 'add',
   'chart.bar.fill': 'bar-chart',
   'person.fill': 'person',
+  'checkmark': 'check',
+  'trash': 'delete',
 } as IconMapping;
 
 /**

@@ -97,6 +97,24 @@ async function initializeDatabase() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text;
     `);
 
+    // Image annotations: inline comments can carry a fractional position
+    // on the project image. Only meaningful when row_id IS NOT NULL.
+    await pool.query(`
+      ALTER TABLE comments ADD COLUMN IF NOT EXISTS image_x numeric;
+      ALTER TABLE comments ADD COLUMN IF NOT EXISTS image_y numeric;
+    `);
+
+    // Backfill: ensure every project owner has a progress row for their own
+    // project. The creation route now does this automatically, but existing
+    // data predates that change.
+    await pool.query(`
+      INSERT INTO progress (user_id, project_id, rows_completed, updated_at)
+      SELECT user_id, id, 0, NOW()
+      FROM projects
+      WHERE user_id IS NOT NULL
+      ON CONFLICT (user_id, project_id) DO NOTHING;
+    `);
+
     console.log('All 7 tables created successfully');
   } catch (err) {
     console.error('Error initializing database:', err.message);

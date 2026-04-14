@@ -2,19 +2,32 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// POST /api/projects/:id/comments — create comment (inline if row_id provided, project-level otherwise)
+// POST /api/projects/:id/comments — create comment (inline if row_id provided, project-level otherwise).
+// Inline comments may optionally carry image_x/image_y fractional coords (0–1)
+// to annotate a position on the project image.
 router.post('/projects/:id/comments', async (req, res) => {
   try {
-    const { user_id, body, row_id } = req.body;
+    const { user_id, body, row_id, image_x, image_y } = req.body;
     if (!user_id || !body?.trim()) {
       return res.status(400).json({ error: 'user_id and body are required' });
     }
 
+    // Only persist coords on inline comments; ignore silently otherwise.
+    const hasCoords =
+      row_id && typeof image_x === 'number' && typeof image_y === 'number';
+
     const result = await pool.query(
-      `INSERT INTO comments (user_id, project_id, row_id, body)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO comments (user_id, project_id, row_id, body, image_x, image_y)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [user_id, req.params.id, row_id || null, body.trim()]
+      [
+        user_id,
+        req.params.id,
+        row_id || null,
+        body.trim(),
+        hasCoords ? image_x : null,
+        hasCoords ? image_y : null,
+      ]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

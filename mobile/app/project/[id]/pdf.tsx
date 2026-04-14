@@ -14,7 +14,6 @@ import { useUser } from '@/hooks/use-user';
 import {
   getProjectDetail,
   getUserProjects,
-  addProjectToTrack,
   removeProjectTracking,
   type ProjectDetail,
 } from '@/services/api';
@@ -38,7 +37,7 @@ export default function PdfViewerScreen() {
       (async () => {
         try {
           const [detail, userProjects] = await Promise.all([
-            getProjectDetail(id),
+            getProjectDetail(id, userId),
             getUserProjects(userId),
           ]);
           setProject(detail);
@@ -52,19 +51,6 @@ export default function PdfViewerScreen() {
       })();
     }, [id, userId])
   );
-
-  const handleAddProject = async () => {
-    if (!userId || !id) return;
-    setAdding(true);
-    try {
-      await addProjectToTrack(userId, id);
-      setIsTracking(true);
-    } catch (err) {
-      console.error('Failed to add project:', err);
-    } finally {
-      setAdding(false);
-    }
-  };
 
   const handleRemoveProject = async () => {
     if (!userId || !id) return;
@@ -109,22 +95,6 @@ export default function PdfViewerScreen() {
         <Text style={styles.headerTitle}>Pdf Viewer</Text>
       </View>
 
-      {/* Add to my projects button */}
-      {!isOwnProject && !isTracking && (
-        <TouchableOpacity
-          style={[styles.addButton, adding && styles.addButtonDisabled]}
-          onPress={handleAddProject}
-          disabled={adding}
-          activeOpacity={0.8}
-        >
-          {adding ? (
-            <ActivityIndicator color={YarnyColors.textSecondary} />
-          ) : (
-            <Text style={styles.addButtonText}>Add to my projects</Text>
-          )}
-        </TouchableOpacity>
-      )}
-
       {!isOwnProject && isTracking && (
         <TouchableOpacity
           style={[styles.removeButton, adding && styles.addButtonDisabled]}
@@ -135,7 +105,7 @@ export default function PdfViewerScreen() {
           {adding ? (
             <ActivityIndicator color={YarnyColors.button} />
           ) : (
-            <Text style={styles.removeButtonText}>Stop tracking</Text>
+            <Text style={styles.removeButtonText}>Remove from library</Text>
           )}
         </TouchableOpacity>
       )}

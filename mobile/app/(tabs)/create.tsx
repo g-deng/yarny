@@ -29,6 +29,7 @@ export default function CreateScreen() {
   const [pdfName, setPdfName] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   // Reset form whenever user returns to this tab
   useFocusEffect(
@@ -39,6 +40,7 @@ export default function CreateScreen() {
       setPdfName(null);
       setIsPublic(false);
       setSaving(false);
+      setStatus(null);
     }, [])
   );
 
@@ -63,10 +65,12 @@ export default function CreateScreen() {
     try {
       let imageUrl: string | null = null;
       if (imageUri) {
+        setStatus('Uploading image...');
         const { url } = await uploadImage(imageUri);
         imageUrl = url;
       }
 
+      setStatus('Creating project...');
       const project = await createProject({
         title: title.trim(),
         image_url: imageUrl,
@@ -75,14 +79,22 @@ export default function CreateScreen() {
       });
 
       if (pdfUri && pdfName) {
-        await parsePdf(project.id, pdfUri, pdfName);
+        setStatus('Uploading pattern PDF...');
+        // parsePdf uploads to storage then calls the AI parse endpoint in one go;
+        // flip the label right before awaiting since the AI step dominates runtime.
+        const parsePromise = parsePdf(project.id, pdfUri, pdfName);
+        // Best-effort UX: after a short delay, update label to reflect the long step.
+        setTimeout(() => setStatus('Parsing pattern with AI (this can take a minute)...'), 1500);
+        await parsePromise;
       }
 
+      setStatus('Done!');
       router.replace(`/project/${project.id}/active`);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to create project');
     } finally {
       setSaving(false);
+      setStatus(null);
     }
   };
 
@@ -110,6 +122,13 @@ export default function CreateScreen() {
         </TouchableOpacity>
 
         <ToggleSwitch value={isPublic} onToggle={setIsPublic} />
+
+        {saving && status && (
+          <View style={styles.statusRow}>
+            <ActivityIndicator size="small" color={YarnyColors.button} />
+            <Text style={styles.statusText}>{status}</Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
@@ -190,5 +209,18 @@ const styles = StyleSheet.create({
     fontFamily: YarnyFonts.bodySemiBold,
     fontSize: YarnySizes.body,
     color: YarnyColors.textSecondary,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  statusText: {
+    fontFamily: YarnyFonts.body,
+    fontSize: 14,
+    color: YarnyColors.textPrimary,
+    textAlign: 'center',
   },
 });

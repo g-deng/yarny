@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode as decodeBase64 } from 'base64-arraybuffer';
 import { API_BASE_URL } from '@/constants/api';
 
 // Types
@@ -122,13 +124,21 @@ export function getPublicProjects() {
   return apiFetch<ProjectWithUser[]>('/api/projects');
 }
 
-export function getProjectDetail(id: string) {
-  return apiFetch<ProjectDetail>(`/api/projects/${id}`);
+export function getProjectDetail(id: string, userId: string) {
+  return apiFetch<ProjectDetail>(`/api/projects/${id}?user_id=${encodeURIComponent(userId)}`);
 }
 
-export function deleteProject(id: string) {
-  return apiFetch<{ message: string }>(`/api/projects/${id}`, {
-    method: 'DELETE',
+export function deleteProject(id: string, userId: string) {
+  return apiFetch<{ kept_global: boolean; message: string }>(
+    `/api/projects/${id}?user_id=${encodeURIComponent(userId)}`,
+    { method: 'DELETE' }
+  );
+}
+
+export function publishProject(id: string, userId: string) {
+  return apiFetch<Project>(`/api/projects/${id}/publish`, {
+    method: 'PATCH',
+    body: JSON.stringify({ user_id: userId }),
   });
 }
 
@@ -173,6 +183,8 @@ export interface Comment {
   body: string;
   created_at: string;
   username: string;
+  image_x: number | null;
+  image_y: number | null;
 }
 
 export interface InlineComment extends Comment {
@@ -180,7 +192,16 @@ export interface InlineComment extends Comment {
   section_title: string;
 }
 
-export function createComment(projectId: string, data: { user_id: string; body: string; row_id?: string | null }) {
+export function createComment(
+  projectId: string,
+  data: {
+    user_id: string;
+    body: string;
+    row_id?: string | null;
+    image_x?: number | null;
+    image_y?: number | null;
+  }
+) {
   return apiFetch<Comment>(`/api/projects/${projectId}/comments`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -221,22 +242,25 @@ export function getActivityLog(userId: string) {
   return apiFetch<ActivityLogEntry[]>(`/api/users/${userId}/activity-log`);
 }
 
-// Uploads — image goes directly to Supabase Storage from the client
+// Uploads — image goes directly to Supabase Storage from the client.
+// Uses expo-file-system + base64-arraybuffer because RN's fetch(fileUri).blob()
+// produces a 0-byte blob that silently hangs Supabase uploads.
 export async function uploadImage(imageUri: string): Promise<{ url: string }> {
   const { supabase } = await import('@/services/supabase');
 
-  // Fetch the image file as a blob
-  const response = await fetch(imageUri);
-  const blob = await response.blob();
-
-  // Derive extension from blob mime type (reliable) or fallback to jpg
-  const mimeExt = blob.type?.split('/')[1]?.split(';')[0];
-  const ext = mimeExt && /^[a-z0-9]+$/i.test(mimeExt) ? mimeExt : 'jpg';
+  const uriExt = imageUri.split('.').pop()?.split('?')[0]?.toLowerCase();
+  const ext = uriExt && /^[a-z0-9]+$/.test(uriExt) ? uriExt : 'jpg';
+  const contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const base64 = await FileSystem.readAsStringAsync(imageUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const body = decodeBase64(base64);
 
   const { error } = await supabase.storage
     .from('project-images')
-    .upload(filename, blob, { contentType: blob.type || `image/${ext}` });
+    .upload(filename, body, { contentType });
 
   if (error) throw new Error(error.message);
 
@@ -254,14 +278,15 @@ export async function parsePdf(
 ): Promise<any> {
   const { supabase } = await import('@/services/supabase');
 
-  // Upload PDF to Supabase Storage
-  const response = await fetch(pdfUri);
-  const blob = await response.blob();
   const storageName = `${Date.now()}-${fileName}`;
+  const base64 = await FileSystem.readAsStringAsync(pdfUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const body = decodeBase64(base64);
 
   const { error } = await supabase.storage
     .from('project-pdfs')
-    .upload(storageName, blob, { contentType: 'application/pdf' });
+    .upload(storageName, body, { contentType: 'application/pdf' });
 
   if (error) throw new Error(error.message);
 

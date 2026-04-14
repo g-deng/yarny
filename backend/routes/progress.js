@@ -35,10 +35,28 @@ router.get('/:userId/projects', async (req, res) => {
   }
 });
 
-// DELETE /api/users/:userId/projects/:id/track — stop tracking a project
+// DELETE /api/users/:userId/projects/:id/track — remove caller's local state.
+// Owners of PRIVATE projects must use DELETE /api/projects/:id instead (that
+// path hard-deletes the global state). Owners of public projects can use
+// either — behavior is equivalent (wipe their own progress + log).
 router.delete('/:userId/projects/:id/track', async (req, res) => {
   try {
     const { userId, id: projectId } = req.params;
+
+    const projectResult = await pool.query(
+      'SELECT user_id, is_public FROM projects WHERE id = $1',
+      [projectId]
+    );
+    if (projectResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    const project = projectResult.rows[0];
+    if (project.user_id === userId && !project.is_public) {
+      return res.status(400).json({
+        error: 'Use DELETE /api/projects/:id to delete a private project you own',
+      });
+    }
+
     await pool.query(
       'DELETE FROM progress WHERE user_id = $1 AND project_id = $2',
       [userId, projectId]
@@ -47,24 +65,32 @@ router.delete('/:userId/projects/:id/track', async (req, res) => {
       'DELETE FROM progress_log WHERE user_id = $1 AND project_id = $2',
       [userId, projectId]
     );
-    res.json({ message: 'Stopped tracking project' });
+    res.json({ message: 'Removed from library' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/users/:userId/projects/:id/add — add someone else's project to track
+// POST /api/users/:userId/projects/:id/add — add a public project to the
+// caller's library. Private projects can only be added by their owner
+// (though owners normally get a progress row from the creation txn).
 router.post('/:userId/projects/:id/add', async (req, res) => {
   try {
     const { userId, id: projectId } = req.params;
 
-    // Check project exists
-    const projectResult = await pool.query('SELECT id FROM projects WHERE id = $1', [projectId]);
+    const projectResult = await pool.query(
+      'SELECT user_id, is_public FROM projects WHERE id = $1',
+      [projectId]
+    );
     if (projectResult.rows.length === 0) {
       return res.status(404).json({ error: 'Project not found' });
     }
+    const project = projectResult.rows[0];
+    if (!project.is_public && project.user_id !== userId) {
+      return res.status(403).json({ error: 'This project is private' });
+    }
 
-    // Create progress record (upsert — no-op if already tracking)
+    // Create progress record (upsert — no-op if already in the library)
     const result = await pool.query(
       `INSERT INTO progress (user_id, project_id, rows_completed, updated_at)
        VALUES ($1, $2, 0, NOW())
@@ -74,7 +100,7 @@ router.post('/:userId/projects/:id/add', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.json({ message: 'Already tracking this project' });
+      return res.json({ message: 'Already in your library' });
     }
 
     res.status(201).json(result.rows[0]);
