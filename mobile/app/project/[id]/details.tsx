@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   TextInput,
   Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +23,8 @@ import {
   removeProjectTracking,
   deleteProject,
   publishProject,
+  restartProject,
+  deleteMyProjectComments,
   getProjectComments,
   getInlineComments,
   createComment,
@@ -58,6 +62,30 @@ export default function ProjectDetailScreen() {
   const [inlineComments, setInlineComments] = useState<InlineComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [postingComment, setPostingComment] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuMounted, setMenuMounted] = useState(false);
+  const menuAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (menuOpen) {
+      setMenuMounted(true);
+      Animated.timing(menuAnim, {
+        toValue: 1,
+        duration: 160,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    } else if (menuMounted) {
+      Animated.timing(menuAnim, {
+        toValue: 0,
+        duration: 120,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setMenuMounted(false);
+      });
+    }
+  }, [menuOpen, menuMounted, menuAnim]);
 
   useFocusEffect(
     useCallback(() => {
@@ -167,6 +195,68 @@ export default function ProjectDetailScreen() {
     }
   };
 
+  const handleClearProgress = () => {
+    if (!userId || !id) return;
+    setMenuOpen(false);
+    Alert.alert(
+      'Clear progress?',
+      'This will reset your progress on this project back to row 0.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            try {
+              await restartProject(userId, id);
+              setRowsCompleted(0);
+            } catch (err) {
+              console.error('Failed to clear progress:', err);
+              Alert.alert('Could not clear progress', (err as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteMyComments = () => {
+    if (!userId || !id) return;
+    setMenuOpen(false);
+    Alert.alert(
+      'Delete your comments?',
+      'This will remove every comment you posted on this project.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            try {
+              await deleteMyProjectComments(id, userId);
+              setProjectComments((prev) => prev.filter((c) => c.user_id !== userId));
+              setInlineComments((prev) => prev.filter((c) => c.user_id !== userId));
+            } catch (err) {
+              console.error('Failed to delete comments:', err);
+              Alert.alert('Could not delete comments', (err as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleMenuDelete = () => {
+    setMenuOpen(false);
+    handleDelete();
+  };
+
   const handlePublish = () => {
     if (!userId || !id) return;
     Alert.alert(
@@ -247,7 +337,7 @@ export default function ProjectDetailScreen() {
             } else if (from === 'profile') {
               router.replace('/(tabs)/profile');
             } else if (isOwnProject || inLibrary) {
-              router.replace(`/project/${id}/active`);
+              router.replace('/(tabs)');
             } else {
               router.replace('/(tabs)/search');
             }
@@ -256,10 +346,98 @@ export default function ProjectDetailScreen() {
         >
           <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{project.title}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {project.title}
+        </Text>
+        {(inLibrary || isOwnProject) && (
+          <TouchableOpacity
+            onPress={() => setMenuOpen((v) => !v)}
+            style={styles.menuButton}
+            hitSlop={10}
+          >
+            <IconSymbol name="ellipsis" size={24} color={YarnyColors.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
 
+      {menuMounted && (
+        <>
+          <TouchableOpacity
+            style={styles.menuBackdrop}
+            activeOpacity={1}
+            onPress={() => setMenuOpen(false)}
+          />
+          <Animated.View
+            style={[
+              styles.menu,
+              {
+                opacity: menuAnim,
+                transform: [
+                  {
+                    translateY: menuAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-8, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleMenuDelete}
+              disabled={busy}
+            >
+              <Text style={styles.menuItemText}>Delete from my library</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleClearProgress}
+              disabled={busy}
+            >
+              <Text style={styles.menuItemText}>Clear my progress</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleDeleteMyComments}
+              disabled={busy}
+            >
+              <Text style={styles.menuItemText}>Delete my comments</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </>
+      )}
+
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Hero image — entrance to the tracker */}
+        {(inLibrary || isOwnProject) ? (
+          <TouchableOpacity
+            style={styles.heroImageWrap}
+            onPress={() => router.push(`/project/${id}/active`)}
+            activeOpacity={0.85}
+          >
+            {project.image_url ? (
+              <Image source={{ uri: project.image_url }} style={styles.heroImage} />
+            ) : (
+              <View style={[styles.heroImage, { backgroundColor: YarnyColors.border }]} />
+            )}
+            <View style={styles.heroOverlay}>
+              <Text style={styles.heroOverlayText}>Open tracker</Text>
+              <IconSymbol name="chevron.right" size={20} color={YarnyColors.textSecondary} />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.heroImageWrap}>
+            {project.image_url ? (
+              <Image source={{ uri: project.image_url }} style={styles.heroImage} />
+            ) : (
+              <View style={[styles.heroImage, { backgroundColor: YarnyColors.border }]} />
+            )}
+          </View>
+        )}
+
         {/* Overview */}
         <Text style={styles.sectionHeader}>Overview</Text>
 
@@ -283,11 +461,6 @@ export default function ProjectDetailScreen() {
         </TouchableOpacity>
 
         <View style={styles.overviewCard}>
-          {project.image_url ? (
-            <Image source={{ uri: project.image_url }} style={styles.overviewImage} />
-          ) : (
-            <View style={[styles.overviewImage, { backgroundColor: YarnyColors.border }]} />
-          )}
           <View style={styles.overviewInfo}>
             <View style={styles.overviewRow}>
               <CircularProgress percent={overallPercent} size={44} />
@@ -355,21 +528,6 @@ export default function ProjectDetailScreen() {
               <Text style={styles.addButtonText}>Added to your library</Text>
             </View>
           </View>
-        )}
-
-        {isOwnProject && (
-          <TouchableOpacity
-            style={[styles.removeButton, busy && styles.addButtonDisabled]}
-            onPress={handleDelete}
-            disabled={busy}
-            activeOpacity={0.8}
-          >
-            {busy ? (
-              <ActivityIndicator color={YarnyColors.button} />
-            ) : (
-              <Text style={styles.removeButtonText}>Delete</Text>
-            )}
-          </TouchableOpacity>
         )}
 
         {isOwnProject && !project.is_public && (
@@ -472,9 +630,51 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   headerTitle: {
+    flex: 1,
     fontFamily: YarnyFonts.header,
     fontSize: YarnySizes.subtitle,
     color: YarnyColors.textSecondary,
+  },
+  menuButton: {
+    marginLeft: 12,
+    padding: 4,
+  },
+  menuBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+  },
+  menu: {
+    position: 'absolute',
+    top: 72,
+    right: 12,
+    backgroundColor: YarnyColors.card,
+    borderRadius: 12,
+    paddingVertical: 4,
+    minWidth: 220,
+    zIndex: 11,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  menuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuItemText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: YarnyColors.border,
+    marginHorizontal: 8,
   },
   content: {
     padding: 16,
@@ -541,17 +741,40 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   overviewCard: {
-    flexDirection: 'row',
     marginBottom: 8,
   },
-  overviewImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
+  heroImageWrap: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: YarnyColors.border,
+    marginBottom: 16,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  heroOverlayText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
   },
   overviewInfo: {
-    flex: 1,
-    marginLeft: 12,
     justifyContent: 'center',
     gap: 6,
   },
@@ -603,6 +826,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 12,
+    marginBottom: 16,
   },
   tag: {
     backgroundColor: YarnyColors.button,

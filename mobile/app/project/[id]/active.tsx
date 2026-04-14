@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,18 @@ import {
   TextInput,
   ScrollView,
   Pressable,
+  Alert,
+  Animated,
+  Easing,
+  PanResponder,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import Reanimated, {
+  LinearTransition,
+  FadeIn,
+  FadeOut,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,6 +30,9 @@ import {
   getUserProjects,
   advanceProgress,
   restartProject,
+  deleteProject,
+  removeProjectTracking,
+  deleteMyProjectComments,
   getRowComments,
   createComment,
   type ProjectDetail,
@@ -48,6 +62,56 @@ export default function ActiveCrochetingScreen() {
   const [pendingCoords, setPendingCoords] = useState<{ x: number; y: number } | null>(null);
   const [skipPin, setSkipPin] = useState(false);
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const pressCoordsRef = useRef<{ x: number; y: number } | null>(null);
+
+  const expandComments = useCallback(() => {
+    setCommentsExpanded(true);
+  }, []);
+
+  const collapseComments = useCallback(() => {
+    setCommentsExpanded(false);
+    setAddMode(false);
+    setPendingCoords(null);
+    setSkipPin(false);
+    setNewComment('');
+  }, []);
+
+  const instructionPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dy) > 8,
+      onPanResponderRelease: (_e, g) => {
+        if (g.dy < -20) expandComments();
+        else if (g.dy > 20) collapseComments();
+      },
+      onPanResponderTerminationRequest: () => false,
+    })
+  ).current;
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuMounted, setMenuMounted] = useState(false);
+  const menuAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (menuOpen) {
+      setMenuMounted(true);
+      Animated.timing(menuAnim, {
+        toValue: 1,
+        duration: 160,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    } else if (menuMounted) {
+      Animated.timing(menuAnim, {
+        toValue: 0,
+        duration: 120,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setMenuMounted(false);
+      });
+    }
+  }, [menuOpen, menuMounted, menuAnim]);
 
   const fetchData = useCallback(async () => {
     if (!id || !userId) return;
@@ -94,6 +158,7 @@ export default function ActiveCrochetingScreen() {
     setSkipPin(false);
     setSelectedCommentId(null);
     setNewComment('');
+    setCommentsExpanded(false);
     if (!currentRow) {
       setRowComments([]);
       return;
@@ -183,6 +248,115 @@ export default function ActiveCrochetingScreen() {
     }
   };
 
+  const isOwnProject = !!project && project.user_id === userId;
+
+  const handleDeleteFromLibrary = () => {
+    if (!userId || !id || !project) return;
+    setMenuOpen(false);
+    const run = async (
+      fn: () => Promise<any>,
+      errorTitle = 'Could not delete'
+    ) => {
+      try {
+        await fn();
+        router.replace('/(tabs)');
+      } catch (err) {
+        console.error(err);
+        Alert.alert(errorTitle, (err as Error).message);
+      }
+    };
+    if (isOwnProject && !project.is_public) {
+      Alert.alert(
+        'Delete project?',
+        "This will permanently delete this project and your progress. This can't be undone.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => run(() => deleteProject(id, userId)),
+          },
+        ]
+      );
+    } else if (isOwnProject && project.is_public) {
+      Alert.alert(
+        'Remove from your library?',
+        "This project will stay public for the community. We'll remove it from your library and reset your progress.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: () => run(() => deleteProject(id, userId)),
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Remove from your library?',
+        'Your progress on this project will be deleted.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: () => run(() => removeProjectTracking(userId, id)),
+          },
+        ]
+      );
+    }
+  };
+
+  const handleClearProgress = () => {
+    if (!userId || !id) return;
+    setMenuOpen(false);
+    Alert.alert(
+      'Clear progress?',
+      'This will reset your progress on this project back to row 0.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await restartProject(userId, id);
+              setRowsCompleted(0);
+            } catch (err) {
+              console.error('Failed to clear progress:', err);
+              Alert.alert('Could not clear progress', (err as Error).message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteMyComments = () => {
+    if (!userId || !id) return;
+    setMenuOpen(false);
+    Alert.alert(
+      'Delete your comments?',
+      'This will remove every comment you posted on this project.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMyProjectComments(id, userId);
+              setRowComments((prev) => prev.filter((c) => c.user_id !== userId));
+            } catch (err) {
+              console.error('Failed to delete comments:', err);
+              Alert.alert('Could not delete comments', (err as Error).message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleRestart = async () => {
     if (!userId || !id || advancing) return;
     setAdvancing(true);
@@ -214,17 +388,86 @@ export default function ActiveCrochetingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.replace(`/project/${id}/details`)} style={styles.backButton}>
           <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{project.title}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {project.title}
+        </Text>
+        <TouchableOpacity
+          onPress={() => setMenuOpen((v) => !v)}
+          style={styles.menuButton}
+          hitSlop={10}
+        >
+          <IconSymbol name="ellipsis" size={24} color={YarnyColors.textSecondary} />
+        </TouchableOpacity>
       </View>
+
+      {menuMounted && (
+        <>
+          <TouchableOpacity
+            style={styles.menuBackdrop}
+            activeOpacity={1}
+            onPress={() => setMenuOpen(false)}
+          />
+          <Animated.View
+            style={[
+              styles.menu,
+              {
+                opacity: menuAnim,
+                transform: [
+                  {
+                    translateY: menuAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-8, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <TouchableOpacity style={styles.menuItem} onPress={handleDeleteFromLibrary}>
+              <Text style={styles.menuItemText}>Delete from my library</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity style={styles.menuItem} onPress={handleClearProgress}>
+              <Text style={styles.menuItemText}>Clear my progress</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity style={styles.menuItem} onPress={handleDeleteMyComments}>
+              <Text style={styles.menuItemText}>Delete my comments</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </>
+      )}
 
       {project.image_url ? (
         <View style={styles.imageWrap}>
           <Pressable
+            onPressIn={(e: any) => {
+              pressCoordsRef.current = {
+                x: e.nativeEvent.locationX,
+                y: e.nativeEvent.locationY,
+              };
+            }}
             onPress={handleImageTap}
+            onLongPress={() => {
+              if (!containerSize || !pressCoordsRef.current) return;
+              const x = Math.min(1, Math.max(0, pressCoordsRef.current.x / containerSize.w));
+              const y = Math.min(1, Math.max(0, pressCoordsRef.current.y / containerSize.h));
+              setAddMode(true);
+              setSkipPin(false);
+              setSelectedCommentId(null);
+              setNewComment('');
+              setPendingCoords({ x, y });
+              expandComments();
+            }}
+            delayLongPress={350}
             onLayout={(e) =>
               setContainerSize({
                 w: e.nativeEvent.layout.width,
@@ -297,48 +540,37 @@ export default function ActiveCrochetingScreen() {
         <View style={[styles.projectImage, { backgroundColor: YarnyColors.border }]} />
       )}
 
-      <View style={styles.bottomCard}>
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 12 }}>
-          {isComplete ? (
-            <Text style={styles.instruction}>Project complete!</Text>
-          ) : currentRow ? (
-            <>
-              <Text style={styles.sectionName}>Section: {currentRow.sectionTitle}</Text>
-              <Text style={styles.instruction}>
-                <Text style={styles.instructionLabel}>Row {currentRow.row_number}:</Text>{' '}
-                {currentRow.instruction}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.instruction}>Upload a pattern to get started</Text>
-          )}
-
-          {currentRow && (
-            <View style={styles.commentsSection}>
-              {rowComments.length > 0 && (
-                <>
-                  <Text style={styles.commentsHeader}>Comments on this row</Text>
-                  {rowComments.map((c) => {
-                    const isSelected = c.id === selectedCommentId;
-                    const hasPin = c.image_x !== null && c.image_y !== null;
-                    return (
-                      <TouchableOpacity
-                        key={c.id}
-                        style={[styles.commentItem, isSelected && styles.commentItemSelected]}
-                        onPress={() => setSelectedCommentId(c.id)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.commentHeaderRow}>
-                          <Text style={styles.commentAuthor}>{c.username}</Text>
-                          {hasPin && <Text style={styles.commentPinBadge}>📍</Text>}
-                        </View>
-                        <Text style={styles.commentBody}>{c.body}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </>
-              )}
-
+      <Reanimated.View
+        style={styles.bottomCard}
+        layout={LinearTransition.duration(220)}
+      >
+        <View style={styles.instructionDragArea} {...instructionPanResponder.panHandlers}>
+          <View style={styles.dragHandleWrap}>
+            <View style={styles.dragHandle} />
+          </View>
+          <View style={styles.instructionInner}>
+            {isComplete ? (
+              <Text style={styles.instruction}>Project complete!</Text>
+            ) : currentRow ? (
+              <>
+                <Text style={styles.sectionName}>Section: {currentRow.sectionTitle}</Text>
+                <Text style={styles.instruction}>
+                  <Text style={styles.instructionLabel}>Row {currentRow.row_number}:</Text>{' '}
+                  {currentRow.instruction}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.instruction}>Upload a pattern to get started</Text>
+            )}
+          </View>
+        </View>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+          {currentRow && commentsExpanded && (
+            <Reanimated.View
+              style={styles.commentsSection}
+              entering={FadeIn.duration(180)}
+              exiting={FadeOut.duration(140)}
+            >
               {!addMode && (
                 <TouchableOpacity
                   style={styles.addCommentButton}
@@ -378,11 +610,36 @@ export default function ActiveCrochetingScreen() {
                   </View>
                 </View>
               )}
-            </View>
+
+              {rowComments.length > 0 && (
+                <>
+                  <Text style={styles.commentsHeader}>Comments on this row</Text>
+                  {rowComments.map((c) => {
+                    const isSelected = c.id === selectedCommentId;
+                    const hasPin = c.image_x !== null && c.image_y !== null;
+                    return (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={[styles.commentItem, isSelected && styles.commentItemSelected]}
+                        onPress={() => setSelectedCommentId(c.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.commentHeaderRow}>
+                          <Text style={styles.commentAuthor}>{c.username}</Text>
+                          {hasPin && <Text style={styles.commentPinBadge}>📍</Text>}
+                        </View>
+                        <Text style={styles.commentBody}>{c.body}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </>
+              )}
+            </Reanimated.View>
           )}
         </ScrollView>
 
         {/* Fixed bottom navigation */}
+        {!commentsExpanded && (
         <View style={styles.footerNav}>
           {isComplete ? (
             <TouchableOpacity
@@ -421,16 +678,10 @@ export default function ActiveCrochetingScreen() {
               </TouchableOpacity>
             </View>
           )}
-
-          <TouchableOpacity
-            style={styles.detailsButton}
-            onPress={() => router.push(`/project/${id}/details`)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.detailsButtonText}>Pattern details</Text>
-          </TouchableOpacity>
         </View>
-      </View>
+        )}
+      </Reanimated.View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -451,9 +702,51 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   headerTitle: {
+    flex: 1,
     fontFamily: YarnyFonts.header,
     fontSize: YarnySizes.subtitle,
     color: YarnyColors.textSecondary,
+  },
+  menuButton: {
+    marginLeft: 12,
+    padding: 4,
+  },
+  menuBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+  },
+  menu: {
+    position: 'absolute',
+    top: 72,
+    right: 12,
+    backgroundColor: YarnyColors.card,
+    borderRadius: 12,
+    paddingVertical: 4,
+    minWidth: 220,
+    zIndex: 11,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  menuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuItemText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: YarnyColors.border,
+    marginHorizontal: 8,
   },
   projectImage: {
     width: '100%',
@@ -531,6 +824,24 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: '60%',
   },
+  instructionDragArea: {
+    // user can pan anywhere on this to toggle the comments sheet
+  },
+  instructionInner: {
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+  },
+  dragHandleWrap: {
+    alignItems: 'center',
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: YarnyColors.border,
+  },
   footerNav: {
     padding: 20,
     paddingTop: 12,
@@ -547,6 +858,7 @@ const styles = StyleSheet.create({
     fontFamily: YarnyFonts.bodySemiBold,
     fontSize: YarnySizes.caption,
     color: YarnyColors.textSecondary,
+    marginTop: 12,
     marginBottom: 8,
   },
   commentItem: {

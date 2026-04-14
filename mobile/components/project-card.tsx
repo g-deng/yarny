@@ -11,6 +11,8 @@ interface ProjectCardProps {
   percentComplete: number;
   lastWorkedAt: string | null;
   isPublic: boolean;
+  authorUsername?: string | null;
+  isOwn?: boolean;
   onPress: () => void;
   onLongPress?: () => void;
   selectionMode?: boolean;
@@ -35,6 +37,8 @@ export function ProjectCard({
   percentComplete,
   lastWorkedAt,
   isPublic,
+  authorUsername,
+  isOwn,
   onPress,
   onLongPress,
   selectionMode = false,
@@ -62,13 +66,20 @@ export function ProjectCard({
       )}
       <View style={styles.info}>
         <Text style={styles.title}>{title}</Text>
+        {authorUsername && (
+          <Text style={styles.author}>
+            {isOwn ? 'your project' : `by @${authorUsername}`}
+          </Text>
+        )}
         <View style={styles.row}>
           <CircularProgress percent={percentComplete} size={40} strokeWidth={3} />
           <Text style={styles.detail}>complete</Text>
         </View>
         <View style={styles.row}>
           <IconSymbol name="house.fill" size={18} color={YarnyColors.textPrimary} />
-          <Text style={styles.detail}>last worked {formatLastWorked(lastWorkedAt)}</Text>
+          <Text style={styles.detail}>
+            {lastWorkedAt ? `last worked ${formatLastWorked(lastWorkedAt)}` : 'Not started yet'}
+          </Text>
         </View>
         <View style={styles.row}>
           <IconSymbol name="person.fill" size={18} color={YarnyColors.textPrimary} />
@@ -123,6 +134,14 @@ const styles = StyleSheet.create({
     fontFamily: YarnyFonts.header,
     fontSize: YarnySizes.body,
     color: YarnyColors.textSecondary,
+    marginBottom: 4,
+  },
+  author: {
+    fontFamily: YarnyFonts.body,
+    fontSize: 12,
+    color: YarnyColors.textSecondary,
+    opacity: 0.85,
+    fontStyle: 'italic',
     marginBottom: 4,
   },
   row: {

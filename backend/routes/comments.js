@@ -88,6 +88,24 @@ router.get('/rows/:rowId/comments', async (req, res) => {
   }
 });
 
+// DELETE /api/projects/:id/comments/mine?user_id=... — delete all of the
+// caller's comments on a given project (both row-level and project-level)
+router.delete('/projects/:id/comments/mine', async (req, res) => {
+  try {
+    const { user_id } = req.query;
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id query param required' });
+    }
+    const result = await pool.query(
+      'DELETE FROM comments WHERE project_id = $1 AND user_id = $2 RETURNING id',
+      [req.params.id, user_id]
+    );
+    res.json({ deleted: result.rows.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/comments/:commentId — delete a comment
 router.delete('/comments/:commentId', async (req, res) => {
   try {

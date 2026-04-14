@@ -8,13 +8,14 @@ router.get('/:userId/projects', async (req, res) => {
     const { userId } = req.params;
     const result = await pool.query(
       `SELECT p.*,
-              COALESCE(pr.rows_completed, 0) AS rows_completed,
+              pr.rows_completed,
               pr.current_row_id,
-              pr.updated_at AS progress_updated_at
-       FROM projects p
-       LEFT JOIN progress pr ON pr.project_id = p.id AND pr.user_id = $1
-       WHERE p.user_id = $1
-          OR pr.user_id = $1
+              pr.updated_at AS progress_updated_at,
+              u.username AS author_username
+       FROM progress pr
+       JOIN projects p ON p.id = pr.project_id
+       LEFT JOIN users u ON u.id = p.user_id
+       WHERE pr.user_id = $1
        ORDER BY p.last_worked_at DESC NULLS LAST`,
       [userId]
     );

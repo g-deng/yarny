@@ -57,6 +57,7 @@ export interface ProjectWithProgress extends Project {
   current_row_id: string | null;
   progress_updated_at: string | null;
   yards_used: number;
+  author_username: string | null;
 }
 
 export interface Row {
@@ -288,6 +289,13 @@ export function deleteComment(commentId: string) {
   return apiFetch<{ message: string }>(`/api/comments/${commentId}`, {
     method: 'DELETE',
   });
+}
+
+export function deleteMyProjectComments(projectId: string, userId: string) {
+  return apiFetch<{ deleted: number }>(
+    `/api/projects/${projectId}/comments/mine?user_id=${encodeURIComponent(userId)}`,
+    { method: 'DELETE' }
+  );
 }
 
 // Stats

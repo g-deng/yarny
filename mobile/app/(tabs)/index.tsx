@@ -203,6 +203,7 @@ export default function HomeScreen() {
         ? (item.rows_completed / item.total_rows) * 100
         : 0;
     const isSelected = selectedIds.has(item.id);
+    const isOwn = item.user_id === userId;
     return (
       <ProjectCard
         key={item.id}
@@ -211,12 +212,14 @@ export default function HomeScreen() {
         percentComplete={percent}
         lastWorkedAt={item.last_worked_at}
         isPublic={item.is_public}
+        authorUsername={item.author_username}
+        isOwn={isOwn}
         selectionMode={selectionMode}
         selected={isSelected}
         onLongPress={() => handleLongPress(item.id)}
         onPress={() => {
           if (selectionMode) toggleSelect(item.id);
-          else router.push(`/project/${item.id}/active`);
+          else router.push(`/project/${item.id}/details`);
         }}
       />
     );

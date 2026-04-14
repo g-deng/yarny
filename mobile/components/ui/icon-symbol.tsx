@@ -27,6 +27,7 @@ const MAPPING = {
   'person.fill': 'person',
   'checkmark': 'check',
   'trash': 'delete',
+  'ellipsis': 'more-vert',
 } as IconMapping;
 
 /**
