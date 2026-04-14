@@ -69,6 +69,9 @@ Format:
 {
   "total_yards": <number or null>,
   "total_rows": <integer>,
+  "yarn_weight": <integer 0-7 or null — standard yarn weight scale: 0=Lace, 1=Super Fine/Fingering, 2=Fine/Sport, 3=Light/DK, 4=Medium/Worsted, 5=Bulky, 6=Super Bulky, 7=Jumbo>,
+  "hook_size": <number in mm or null — e.g. 4.0, 5.5, 6.0>,
+  "project_type": <one of: "Amigurumi", "Tops", "Dresses", "Bottoms", "Sweaters", "Accessories", "Hats", "Scarves", "Bags", "Blankets", "Home Decor", "Other">,
   "sections": [
     {
       "title": "<section name>",
@@ -79,6 +82,8 @@ Format:
     }
   ]
 }
+
+For the tags (yarn_weight, hook_size, project_type), infer them from the pattern text. Look for phrases like "Size 4 yarn", "worsted weight", "5.0mm hook", "H hook", "crochet top", etc. If truly unclear, use null for yarn_weight/hook_size and "Other" for project_type.
 
 Return ONLY valid JSON, no markdown fences, no explanation.`,
         },
@@ -100,8 +105,19 @@ Return ONLY valid JSON, no markdown fences, no explanation.`,
     await client.query('BEGIN');
 
     await client.query(
-      'UPDATE projects SET total_yards = $1, total_rows = $2, pdf_url = $3 WHERE id = $4',
-      [parsed.total_yards, parsed.total_rows, pdf_url, req.params.id]
+      `UPDATE projects
+       SET total_yards = $1, total_rows = $2, pdf_url = $3,
+           yarn_weight = $4, hook_size = $5, project_type = $6
+       WHERE id = $7`,
+      [
+        parsed.total_yards,
+        parsed.total_rows,
+        pdf_url,
+        parsed.yarn_weight ?? null,
+        parsed.hook_size ?? null,
+        parsed.project_type ?? null,
+        req.params.id,
+      ]
     );
 
     for (const section of parsed.sections) {

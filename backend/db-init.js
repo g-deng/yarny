@@ -24,6 +24,9 @@ async function initializeDatabase() {
         is_public       boolean DEFAULT false,
         total_yards     numeric,
         total_rows      int,
+        yarn_weight     int,
+        hook_size       numeric,
+        project_type    text,
         created_at      timestamptz DEFAULT now(),
         last_worked_at  timestamptz
       );
@@ -89,6 +92,9 @@ async function initializeDatabase() {
     // Add pdf_url column if it doesn't exist (for existing databases)
     await pool.query(`
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS pdf_url text;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS yarn_weight int;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS hook_size numeric;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_type text;
     `);
 
     // Add profile fields to users (for existing databases)

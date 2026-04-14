@@ -5,6 +5,7 @@ import {
   logIn as logInService,
   logOut as logOutService,
 } from '@/services/user';
+import { getUser } from '@/services/api';
 
 interface UserContextValue {
   userId: string | null;
@@ -21,9 +22,34 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getUserId()
-      .then(setUserId)
-      .finally(() => setLoading(false));
+    (async () => {
+      try {
+        const stored = await getUserId();
+        if (!stored) {
+          setUserId(null);
+          return;
+        }
+        // Verify the stored user still exists on the backend.
+        // If the DB was wiped, clear AsyncStorage and force re-signup.
+        try {
+          await getUser(stored);
+          setUserId(stored);
+        } catch (err: any) {
+          const notFound =
+            err?.message?.includes('not found') || err?.message?.includes('404');
+          if (notFound) {
+            await logOutService();
+            setUserId(null);
+          } else {
+            // Network error etc — keep the stored ID so the user isn't
+            // logged out just because the server is unreachable.
+            setUserId(stored);
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const signUp = useCallback(async (username: string) => {

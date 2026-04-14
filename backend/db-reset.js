@@ -36,6 +36,9 @@ async function resetDatabase() {
         is_public       boolean DEFAULT false,
         total_yards     numeric,
         total_rows      int,
+        yarn_weight     int,
+        hook_size       numeric,
+        project_type    text,
         created_at      timestamptz DEFAULT now(),
         last_worked_at  timestamptz
       );

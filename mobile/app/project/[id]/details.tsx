@@ -341,6 +341,27 @@ export default function ProjectDetailScreen() {
           </View>
         </View>
 
+        {/* Tags */}
+        {(project.yarn_weight !== null || project.hook_size !== null || project.project_type) && (
+          <View style={styles.tagRow}>
+            {project.project_type && (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{project.project_type}</Text>
+              </View>
+            )}
+            {project.yarn_weight !== null && (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>Yarn weight {project.yarn_weight}</Text>
+              </View>
+            )}
+            {project.hook_size !== null && (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{project.hook_size}mm hook</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Sections */}
         <Text style={styles.sectionHeader}>Sections</Text>
         {sectionProgress.map((section) => (
@@ -502,6 +523,23 @@ const styles = StyleSheet.create({
     fontFamily: YarnyFonts.body,
     fontSize: YarnySizes.body,
     color: YarnyColors.textPrimary,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  tag: {
+    backgroundColor: YarnyColors.button,
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  tagText: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.caption,
+    color: YarnyColors.textSecondary,
   },
   sectionRow: {
     flexDirection: 'row',

@@ -1,6 +1,22 @@
+import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as decodeBase64 } from 'base64-arraybuffer';
 import { API_BASE_URL } from '@/constants/api';
+
+// Reads a local URI into an ArrayBuffer. On web we use fetch() since URIs
+// there are blob: / object URLs that expo-file-system can't handle; on native
+// we use expo-file-system + base64-arraybuffer because RN's fetch(fileUri).blob()
+// produces a 0-byte blob that silently hangs Supabase uploads.
+async function readUriAsBody(uri: string): Promise<ArrayBuffer> {
+  if (Platform.OS === 'web') {
+    const res = await fetch(uri);
+    return res.arrayBuffer();
+  }
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  return decodeBase64(base64);
+}
 
 // Types
 export interface User {
@@ -20,6 +36,9 @@ export interface Project {
   is_public: boolean;
   total_yards: number | null;
   total_rows: number | null;
+  yarn_weight: number | null;
+  hook_size: number | null;
+  project_type: string | null;
   created_at: string;
   last_worked_at: string | null;
 }
@@ -243,8 +262,6 @@ export function getActivityLog(userId: string) {
 }
 
 // Uploads — image goes directly to Supabase Storage from the client.
-// Uses expo-file-system + base64-arraybuffer because RN's fetch(fileUri).blob()
-// produces a 0-byte blob that silently hangs Supabase uploads.
 export async function uploadImage(imageUri: string): Promise<{ url: string }> {
   const { supabase } = await import('@/services/supabase');
 
@@ -253,10 +270,7 @@ export async function uploadImage(imageUri: string): Promise<{ url: string }> {
   const contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const base64 = await FileSystem.readAsStringAsync(imageUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  const body = decodeBase64(base64);
+  const body = await readUriAsBody(imageUri);
 
   const { error } = await supabase.storage
     .from('project-images')
@@ -279,10 +293,7 @@ export async function parsePdf(
   const { supabase } = await import('@/services/supabase');
 
   const storageName = `${Date.now()}-${fileName}`;
-  const base64 = await FileSystem.readAsStringAsync(pdfUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  const body = decodeBase64(base64);
+  const body = await readUriAsBody(pdfUri);
 
   const { error } = await supabase.storage
     .from('project-pdfs')
