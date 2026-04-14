@@ -260,61 +260,28 @@ export default function ProjectDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Library / delete / publish buttons */}
-        {!isOwnProject && !inLibrary && (
-          <TouchableOpacity
-            style={[styles.addButton, busy && styles.addButtonDisabled]}
-            onPress={handleAddToLibrary}
-            disabled={busy}
-            activeOpacity={0.8}
-          >
-            {busy ? (
-              <ActivityIndicator color={YarnyColors.textSecondary} />
-            ) : (
-              <Text style={styles.addButtonText}>Add to library</Text>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {(isOwnProject || inLibrary) && (
-          <TouchableOpacity
-            style={[styles.removeButton, busy && styles.addButtonDisabled]}
-            onPress={handleDelete}
-            disabled={busy}
-            activeOpacity={0.8}
-          >
-            {busy ? (
-              <ActivityIndicator color={YarnyColors.button} />
-            ) : (
-              <Text style={styles.removeButtonText}>Delete</Text>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {isOwnProject && !project.is_public && (
-          <TouchableOpacity
-            style={[styles.addButton, busy && styles.addButtonDisabled]}
-            onPress={handlePublish}
-            disabled={busy}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.addButtonText}>Make public</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* View PDF button */}
-        {project.pdf_url && (
-          <TouchableOpacity
-            style={styles.viewPdfButton}
-            onPress={() => router.push(`/project/${id}/pdf`)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewPdfButtonText}>View pattern PDF</Text>
-          </TouchableOpacity>
-        )}
-
         {/* Overview */}
         <Text style={styles.sectionHeader}>Overview</Text>
+
+        {/* Creator */}
+        <TouchableOpacity
+          style={styles.creatorRow}
+          onPress={() => router.push(`/user/${project.user_id}`)}
+          activeOpacity={0.7}
+        >
+          {project.profile_photo_url ? (
+            <Image source={{ uri: project.profile_photo_url }} style={styles.creatorAvatar} />
+          ) : (
+            <View style={[styles.creatorAvatar, styles.creatorAvatarFallback]}>
+              <Text style={styles.creatorAvatarText}>
+                {project.username?.charAt(0).toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.creatorLabel}>Created by </Text>
+          <Text style={styles.creatorLink}>@{project.username}</Text>
+        </TouchableOpacity>
+
         <View style={styles.overviewCard}>
           {project.image_url ? (
             <Image source={{ uri: project.image_url }} style={styles.overviewImage} />
@@ -360,6 +327,70 @@ export default function ProjectDetailScreen() {
               </View>
             )}
           </View>
+        )}
+
+        {/* Library / delete / publish / PDF buttons */}
+        {!isOwnProject && !inLibrary && (
+          <TouchableOpacity
+            style={[styles.addButton, busy && styles.addButtonDisabled]}
+            onPress={handleAddToLibrary}
+            disabled={busy}
+            activeOpacity={0.8}
+          >
+            {busy ? (
+              <ActivityIndicator color={YarnyColors.textSecondary} />
+            ) : (
+              <View style={styles.addButtonContent}>
+                <IconSymbol name="plus" size={18} color={YarnyColors.textSecondary} />
+                <Text style={styles.addButtonText}>Add to library</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {!isOwnProject && inLibrary && (
+          <View style={[styles.addButton, styles.addedButton]}>
+            <View style={styles.addButtonContent}>
+              <IconSymbol name="checkmark" size={18} color={YarnyColors.textSecondary} />
+              <Text style={styles.addButtonText}>Added to your library</Text>
+            </View>
+          </View>
+        )}
+
+        {isOwnProject && (
+          <TouchableOpacity
+            style={[styles.removeButton, busy && styles.addButtonDisabled]}
+            onPress={handleDelete}
+            disabled={busy}
+            activeOpacity={0.8}
+          >
+            {busy ? (
+              <ActivityIndicator color={YarnyColors.button} />
+            ) : (
+              <Text style={styles.removeButtonText}>Delete</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {isOwnProject && !project.is_public && (
+          <TouchableOpacity
+            style={[styles.addButton, busy && styles.addButtonDisabled]}
+            onPress={handlePublish}
+            disabled={busy}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.addButtonText}>Make public</Text>
+          </TouchableOpacity>
+        )}
+
+        {project.pdf_url && (
+          <TouchableOpacity
+            style={styles.viewPdfButton}
+            onPress={() => router.push(`/project/${id}/pdf`)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.viewPdfButtonText}>View pattern PDF</Text>
+          </TouchableOpacity>
         )}
 
         {/* Sections */}
@@ -453,10 +484,19 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 20,
     marginBottom: 16,
   },
   addButtonDisabled: {
     opacity: 0.6,
+  },
+  addedButton: {
+    opacity: 0.55,
+  },
+  addButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   addButtonText: {
     fontFamily: YarnyFonts.bodySemiBold,
@@ -469,6 +509,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 20,
     marginBottom: 16,
   },
   viewPdfButton: {
@@ -523,6 +564,39 @@ const styles = StyleSheet.create({
     fontFamily: YarnyFonts.body,
     fontSize: YarnySizes.body,
     color: YarnyColors.textPrimary,
+  },
+  creatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingVertical: 6,
+  },
+  creatorAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  creatorAvatarFallback: {
+    backgroundColor: YarnyColors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  creatorAvatarText: {
+    fontFamily: YarnyFonts.header,
+    fontSize: 16,
+    color: YarnyColors.textPrimary,
+  },
+  creatorLabel: {
+    fontFamily: YarnyFonts.body,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.textPrimary,
+  },
+  creatorLink: {
+    fontFamily: YarnyFonts.bodySemiBold,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.button,
+    textDecorationLine: 'underline',
   },
   tagRow: {
     flexDirection: 'row',

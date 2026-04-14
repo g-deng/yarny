@@ -305,7 +305,8 @@ export default function ActiveCrochetingScreen() {
             <>
               <Text style={styles.sectionName}>Section: {currentRow.sectionTitle}</Text>
               <Text style={styles.instruction}>
-                Row {currentRow.row_number}: {currentRow.instruction}
+                <Text style={styles.instructionLabel}>Row {currentRow.row_number}:</Text>{' '}
+                {currentRow.instruction}
               </Text>
             </>
           ) : (
@@ -635,10 +636,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   instruction: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: YarnyFonts.body,
     fontSize: YarnySizes.body,
     color: YarnyColors.textSecondary,
     marginBottom: 16,
+  },
+  instructionLabel: {
+    fontFamily: YarnyFonts.bodySemiBold,
   },
   rowButtons: {
     flexDirection: 'row',

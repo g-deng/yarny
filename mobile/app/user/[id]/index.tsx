@@ -10,59 +10,86 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useUser } from '@/hooks/use-user';
 import {
   getUser,
   getUserPublicProjects,
-  getUserProjects,
+  followUser,
+  unfollowUser,
   type User,
   type Project,
-  type ProjectWithProgress,
 } from '@/services/api';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
 
-export default function ProfileScreen() {
-  const { userId, loading: userLoading, logOut } = useUser();
+export default function UserProfileScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { userId: viewerId } = useUser();
   const router = useRouter();
+
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [inProgress, setInProgress] = useState<ProjectWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const isOwnProfile = viewerId === id;
 
   useFocusEffect(
     useCallback(() => {
-      if (!userId) return;
+      if (!id) return;
       (async () => {
         try {
-          const [u, p, mine] = await Promise.all([
-            getUser(userId, userId),
-            getUserPublicProjects(userId),
-            getUserProjects(userId),
+          const [u, p] = await Promise.all([
+            getUser(id, viewerId || undefined),
+            getUserPublicProjects(id),
           ]);
           setUser(u);
           setProjects(p);
-          setInProgress(
-            mine.filter(
-              (pr) =>
-                !(pr.total_rows && pr.total_rows > 0 && pr.rows_completed >= pr.total_rows)
-            )
-          );
         } catch (err) {
-          console.error('Failed to fetch profile:', err);
+          console.error('Failed to fetch user profile:', err);
         } finally {
           setLoading(false);
         }
       })();
-    }, [userId])
+    }, [id, viewerId])
   );
 
-  if (userLoading || loading) {
+  const handleToggleFollow = async () => {
+    if (!viewerId || !user || busy) return;
+    const wasFollowing = !!user.is_following;
+    setBusy(true);
+    // Optimistic
+    setUser({
+      ...user,
+      is_following: !wasFollowing,
+      follower_count: (user.follower_count ?? 0) + (wasFollowing ? -1 : 1),
+    });
+    try {
+      if (wasFollowing) await unfollowUser(viewerId, user.id);
+      else await followUser(viewerId, user.id);
+    } catch (err) {
+      console.error('Follow toggle failed:', err);
+      // revert
+      setUser({
+        ...user,
+        is_following: wasFollowing,
+        follower_count: user.follower_count,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (loading || !user) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <IconSymbol name="chevron.right" size={22} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
+          <View style={styles.backButton} />
         </View>
         <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
       </SafeAreaView>
@@ -72,27 +99,31 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <IconSymbol name="chevron.right" size={22} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{user.username}</Text>
+        <View style={styles.backButton} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        {user?.profile_photo_url ? (
+        {user.profile_photo_url ? (
           <Image source={{ uri: user.profile_photo_url }} style={styles.photo} />
         ) : (
           <View style={[styles.photo, styles.avatarFallback]}>
             <Text style={styles.avatarText}>
-              {user?.username?.charAt(0)?.toUpperCase() ?? '?'}
+              {user.username?.charAt(0)?.toUpperCase() ?? '?'}
             </Text>
           </View>
         )}
 
-        <Text style={styles.username}>{user?.username ?? 'Unknown'}</Text>
-        {user?.created_at && (
+        <Text style={styles.username}>{user.username}</Text>
+        {user.created_at && (
           <Text style={styles.memberSince}>
             Member since {new Date(user.created_at).toLocaleDateString()}
           </Text>
         )}
 
-        {user?.bio ? (
+        {user.bio ? (
           <Text style={styles.bio}>{user.bio}</Text>
         ) : (
           <Text style={styles.bioEmpty}>No bio yet</Text>
@@ -101,55 +132,46 @@ export default function ProfileScreen() {
         <View style={styles.countsRow}>
           <TouchableOpacity
             style={styles.countItem}
-            onPress={() => userId && router.push(`/user/${userId}/followers`)}
+            onPress={() => router.push(`/user/${id}/followers`)}
             activeOpacity={0.7}
           >
-            <Text style={styles.countNumber}>{user?.follower_count ?? 0}</Text>
+            <Text style={styles.countNumber}>{user.follower_count ?? 0}</Text>
             <Text style={styles.countLabel}>Followers</Text>
           </TouchableOpacity>
           <View style={styles.countDivider} />
           <TouchableOpacity
             style={styles.countItem}
-            onPress={() => userId && router.push(`/user/${userId}/following`)}
+            onPress={() => router.push(`/user/${id}/following`)}
             activeOpacity={0.7}
           >
-            <Text style={styles.countNumber}>{user?.following_count ?? 0}</Text>
+            <Text style={styles.countNumber}>{user.following_count ?? 0}</Text>
             <Text style={styles.countLabel}>Following</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push('/edit-profile')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.editButtonText}>Edit profile</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.sectionHeader}>In progress</Text>
-        {inProgress.length === 0 ? (
-          <Text style={styles.emptyProjects}>No projects in progress</Text>
-        ) : (
-          inProgress.map((p) => (
-            <TouchableOpacity
-              key={p.id}
-              style={styles.projectCard}
-              onPress={() => router.push(`/project/${p.id}/active`)}
-              activeOpacity={0.8}
+        {!isOwnProfile && (
+          <TouchableOpacity
+            style={[
+              styles.followButton,
+              user.is_following && styles.followingButton,
+              busy && { opacity: 0.6 },
+            ]}
+            onPress={handleToggleFollow}
+            disabled={busy}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                styles.followButtonText,
+                user.is_following && styles.followingButtonText,
+              ]}
             >
-              {p.image_url ? (
-                <Image source={{ uri: p.image_url }} style={styles.projectImage} />
-              ) : (
-                <View style={[styles.projectImage, { backgroundColor: YarnyColors.border }]} />
-              )}
-              <Text style={styles.projectTitle} numberOfLines={1}>
-                {p.title}
-              </Text>
-            </TouchableOpacity>
-          ))
+              {user.is_following ? 'Following' : 'Follow'}
+            </Text>
+          </TouchableOpacity>
         )}
 
-        <Text style={styles.sectionHeader}>My public projects</Text>
+        <Text style={styles.sectionHeader}>Public projects</Text>
         {projects.length === 0 ? (
           <Text style={styles.emptyProjects}>No public projects yet</Text>
         ) : (
@@ -157,7 +179,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               key={p.id}
               style={styles.projectCard}
-              onPress={() => router.push(`/project/${p.id}/details?from=profile`)}
+              onPress={() => router.push(`/project/${p.id}/details?from=user`)}
               activeOpacity={0.8}
             >
               {p.image_url ? (
@@ -171,17 +193,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           ))
         )}
-
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={async () => {
-            await logOut();
-            router.replace('/welcome');
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.logoutButtonText}>Log out</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -195,7 +206,14 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: YarnyColors.button,
     paddingVertical: 12,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    width: 32,
+    alignItems: 'flex-start',
   },
   headerTitle: {
     fontFamily: YarnyFonts.header,
@@ -273,17 +291,24 @@ const styles = StyleSheet.create({
     height: 30,
     backgroundColor: YarnyColors.border,
   },
-  editButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
+  followButton: {
+    backgroundColor: YarnyColors.button,
     borderRadius: 24,
     paddingVertical: 10,
-    paddingHorizontal: 32,
+    paddingHorizontal: 40,
     marginBottom: 24,
   },
-  editButtonText: {
+  followingButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: YarnyColors.button,
+  },
+  followButtonText: {
     fontFamily: YarnyFonts.bodySemiBold,
     fontSize: YarnySizes.body,
+    color: YarnyColors.textSecondary,
+  },
+  followingButtonText: {
     color: YarnyColors.button,
   },
   sectionHeader: {
@@ -294,7 +319,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: YarnyColors.button,
     paddingBottom: 4,
-    marginTop: 16,
     marginBottom: 8,
   },
   emptyProjects: {
@@ -324,18 +348,5 @@ const styles = StyleSheet.create({
     fontSize: YarnySizes.body,
     color: YarnyColors.textSecondary,
     marginLeft: 12,
-  },
-  logoutButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 48,
-    marginTop: 24,
-  },
-  logoutButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
-    fontSize: YarnySizes.body,
-    color: YarnyColors.button,
   },
 });

@@ -6,6 +6,7 @@ async function resetDatabase() {
 
     // Drop in reverse dependency order (cascade handles the rest)
     await pool.query(`
+      DROP TABLE IF EXISTS follows CASCADE;
       DROP TABLE IF EXISTS comments CASCADE;
       DROP TABLE IF EXISTS progress_log CASCADE;
       DROP TABLE IF EXISTS progress CASCADE;
@@ -82,11 +83,24 @@ async function resetDatabase() {
         project_id  uuid REFERENCES projects(id) ON DELETE CASCADE,
         row_id      uuid REFERENCES rows(id),
         body        text NOT NULL,
+        image_x     numeric,
+        image_y     numeric,
         created_at  timestamptz DEFAULT now()
       );
+
+      CREATE TABLE follows (
+        id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        follower_id   uuid REFERENCES users(id) ON DELETE CASCADE,
+        following_id  uuid REFERENCES users(id) ON DELETE CASCADE,
+        created_at    timestamptz DEFAULT now(),
+        UNIQUE(follower_id, following_id),
+        CHECK (follower_id <> following_id)
+      );
+      CREATE INDEX idx_follows_follower ON follows(follower_id);
+      CREATE INDEX idx_follows_following ON follows(following_id);
     `);
 
-    console.log('Database reset complete. All 7 tables recreated.');
+    console.log('Database reset complete. All 8 tables recreated.');
   } catch (err) {
     console.error('Error resetting database:', err.message);
   } finally {

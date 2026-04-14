@@ -5,12 +5,21 @@ import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
 interface ToggleSwitchProps {
   value: boolean;
   onToggle: (value: boolean) => void;
+  leftLabel?: string;
+  rightLabel?: string;
 }
 
-export function ToggleSwitch({ value, onToggle }: ToggleSwitchProps) {
+export function ToggleSwitch({
+  value,
+  onToggle,
+  leftLabel = 'Private',
+  rightLabel = 'Public',
+}: ToggleSwitchProps) {
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, !value && styles.activeLabel]}>Private</Text>
+      <TouchableOpacity onPress={() => onToggle(false)} activeOpacity={0.7}>
+        <Text style={[styles.label, !value && styles.activeLabel]}>{leftLabel}</Text>
+      </TouchableOpacity>
       <TouchableOpacity
         style={styles.track}
         onPress={() => onToggle(!value)}
@@ -18,7 +27,9 @@ export function ToggleSwitch({ value, onToggle }: ToggleSwitchProps) {
       >
         <View style={[styles.thumb, value && styles.thumbRight]} />
       </TouchableOpacity>
-      <Text style={[styles.label, value && styles.activeLabel]}>Public</Text>
+      <TouchableOpacity onPress={() => onToggle(true)} activeOpacity={0.7}>
+        <Text style={[styles.label, value && styles.activeLabel]}>{rightLabel}</Text>
+      </TouchableOpacity>
     </View>
   );
 }

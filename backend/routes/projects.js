@@ -36,15 +36,45 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/projects — all public projects (community feed)
+// GET /api/projects — public projects feed.
+// Query params:
+//   ?filter=all|following (default: all)
+//   ?viewer_id=...        (required when filter=following)
+//   ?sort=adds|created    (default: adds for all, created for following)
+// Always returns adds_count (count of distinct users tracking the project in progress).
 router.get('/', async (req, res) => {
   try {
+    const filter = (req.query.filter || 'all').toString();
+    const viewerId = req.query.viewer_id ? req.query.viewer_id.toString() : null;
+    const sort = (req.query.sort || (filter === 'following' ? 'created' : 'adds')).toString();
+
+    const orderBy =
+      sort === 'created' ? 'p.created_at DESC' : 'adds_count DESC, p.created_at DESC';
+
+    if (filter === 'following') {
+      if (!viewerId) {
+        return res.status(400).json({ error: 'viewer_id required for following filter' });
+      }
+      const result = await pool.query(
+        `SELECT p.*, u.username, u.profile_photo_url,
+                (SELECT COUNT(DISTINCT user_id)::int FROM progress WHERE project_id = p.id) AS adds_count
+         FROM projects p
+         JOIN users u ON p.user_id = u.id
+         JOIN follows f ON f.following_id = p.user_id
+         WHERE p.is_public = true AND f.follower_id = $1
+         ORDER BY ${orderBy}`,
+        [viewerId]
+      );
+      return res.json(result.rows);
+    }
+
     const result = await pool.query(
-      `SELECT p.*, u.username
+      `SELECT p.*, u.username, u.profile_photo_url,
+              (SELECT COUNT(DISTINCT user_id)::int FROM progress WHERE project_id = p.id) AS adds_count
        FROM projects p
        JOIN users u ON p.user_id = u.id
        WHERE p.is_public = true
-       ORDER BY p.created_at DESC`
+       ORDER BY ${orderBy}`
     );
     res.json(result.rows);
   } catch (err) {
@@ -60,7 +90,11 @@ router.get('/:id', async (req, res) => {
     const { user_id } = req.query;
 
     const projectResult = await pool.query(
-      'SELECT * FROM projects WHERE id = $1',
+      `SELECT p.*, u.username, u.profile_photo_url,
+              (SELECT COUNT(DISTINCT user_id)::int FROM progress WHERE project_id = p.id) AS adds_count
+       FROM projects p
+       JOIN users u ON p.user_id = u.id
+       WHERE p.id = $1`,
       [id]
     );
     if (projectResult.rows.length === 0) {

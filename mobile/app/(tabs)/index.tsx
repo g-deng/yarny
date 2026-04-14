@@ -3,11 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
+  RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,7 +25,22 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [inProgressCollapsed, setInProgressCollapsed] = useState(false);
+  const [completedCollapsed, setCompletedCollapsed] = useState(false);
   const router = useRouter();
+
+  const { inProgress, completed } = React.useMemo(() => {
+    const ip: ProjectWithProgress[] = [];
+    const done: ProjectWithProgress[] = [];
+    for (const p of projects) {
+      if (p.total_rows && p.total_rows > 0 && p.rows_completed >= p.total_rows) {
+        done.push(p);
+      } else {
+        ip.push(p);
+      }
+    }
+    return { inProgress: ip, completed: done };
+  }, [projects]);
 
   const selectionMode = selectedIds.size > 0;
 
@@ -138,41 +155,101 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          data={projects}
-          keyExtractor={(item) => item.id}
+        <ScrollView
           contentContainerStyle={styles.list}
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            fetchProjects();
-          }}
-          renderItem={({ item }) => {
-            const percent =
-              item.total_rows && item.total_rows > 0
-                ? (item.rows_completed / item.total_rows) * 100
-                : 0;
-            const isSelected = selectedIds.has(item.id);
-            return (
-              <ProjectCard
-                title={item.title}
-                imageUrl={item.image_url}
-                percentComplete={percent}
-                lastWorkedAt={item.last_worked_at}
-                isPublic={item.is_public}
-                selectionMode={selectionMode}
-                selected={isSelected}
-                onLongPress={() => handleLongPress(item.id)}
-                onPress={() => {
-                  if (selectionMode) toggleSelect(item.id);
-                  else router.push(`/project/${item.id}/active`);
-                }}
-              />
-            );
-          }}
-        />
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                fetchProjects();
+              }}
+            />
+          }
+        >
+          <SectionHeader
+            title="In progress"
+            count={inProgress.length}
+            collapsed={inProgressCollapsed}
+            onToggle={() => setInProgressCollapsed((v) => !v)}
+          />
+          {!inProgressCollapsed &&
+            (inProgress.length === 0 ? (
+              <Text style={styles.emptySection}>No projects in progress</Text>
+            ) : (
+              inProgress.map((item) => renderProject(item))
+            ))}
+
+          <SectionHeader
+            title="Completed"
+            count={completed.length}
+            collapsed={completedCollapsed}
+            onToggle={() => setCompletedCollapsed((v) => !v)}
+          />
+          {!completedCollapsed &&
+            (completed.length === 0 ? (
+              <Text style={styles.emptySection}>No completed projects yet</Text>
+            ) : (
+              completed.map((item) => renderProject(item))
+            ))}
+        </ScrollView>
       )}
     </SafeAreaView>
+  );
+
+  function renderProject(item: ProjectWithProgress) {
+    const percent =
+      item.total_rows && item.total_rows > 0
+        ? (item.rows_completed / item.total_rows) * 100
+        : 0;
+    const isSelected = selectedIds.has(item.id);
+    return (
+      <ProjectCard
+        key={item.id}
+        title={item.title}
+        imageUrl={item.image_url}
+        percentComplete={percent}
+        lastWorkedAt={item.last_worked_at}
+        isPublic={item.is_public}
+        selectionMode={selectionMode}
+        selected={isSelected}
+        onLongPress={() => handleLongPress(item.id)}
+        onPress={() => {
+          if (selectionMode) toggleSelect(item.id);
+          else router.push(`/project/${item.id}/active`);
+        }}
+      />
+    );
+  }
+}
+
+function SectionHeader({
+  title,
+  count,
+  collapsed,
+  onToggle,
+}: {
+  title: string;
+  count: number;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.sectionHeader}
+      onPress={onToggle}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.sectionHeaderText}>
+        {title} ({count})
+      </Text>
+      <IconSymbol
+        name="chevron.right"
+        size={18}
+        color={YarnyColors.textPrimary}
+        style={{ transform: [{ rotate: collapsed ? '0deg' : '90deg' }] }}
+      />
+    </TouchableOpacity>
   );
 }
 
@@ -230,5 +307,29 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    marginTop: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: YarnyColors.button,
+    marginBottom: 8,
+  },
+  sectionHeaderText: {
+    fontFamily: YarnyFonts.header,
+    fontSize: YarnySizes.subtitle,
+    color: YarnyColors.textPrimary,
+  },
+  emptySection: {
+    fontFamily: YarnyFonts.body,
+    fontSize: YarnySizes.body,
+    color: YarnyColors.border,
+    fontStyle: 'italic',
+    marginBottom: 12,
+    paddingLeft: 4,
   },
 });

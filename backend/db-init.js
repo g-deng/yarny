@@ -89,6 +89,20 @@ async function initializeDatabase() {
       );
     `);
 
+    // 8. Follows — directed social graph between users.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS follows (
+        id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        follower_id   uuid REFERENCES users(id) ON DELETE CASCADE,
+        following_id  uuid REFERENCES users(id) ON DELETE CASCADE,
+        created_at    timestamptz DEFAULT now(),
+        UNIQUE(follower_id, following_id),
+        CHECK (follower_id <> following_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower_id);
+      CREATE INDEX IF NOT EXISTS idx_follows_following ON follows(following_id);
+    `);
+
     // Add pdf_url column if it doesn't exist (for existing databases)
     await pool.query(`
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS pdf_url text;
@@ -121,7 +135,7 @@ async function initializeDatabase() {
       ON CONFLICT (user_id, project_id) DO NOTHING;
     `);
 
-    console.log('All 7 tables created successfully');
+    console.log('All 8 tables created successfully');
   } catch (err) {
     console.error('Error initializing database:', err.message);
   } finally {

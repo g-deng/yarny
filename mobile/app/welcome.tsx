@@ -98,7 +98,7 @@ export default function WelcomeScreen() {
             setUsername(text);
             if (error) setError(null);
           }}
-          placeholder="Your username"
+          placeholder={mode === 'signup' ? undefined : 'Your username'}
           placeholderTextColor={YarnyColors.border}
           autoCapitalize="none"
           autoCorrect={false}

@@ -25,6 +25,9 @@ export interface User {
   profile_photo_url: string | null;
   bio: string | null;
   created_at: string;
+  follower_count?: number;
+  following_count?: number;
+  is_following?: boolean;
 }
 
 export interface Project {
@@ -45,6 +48,8 @@ export interface Project {
 
 export interface ProjectWithUser extends Project {
   username: string;
+  profile_photo_url: string | null;
+  adds_count: number;
 }
 
 export interface ProjectWithProgress extends Project {
@@ -70,6 +75,9 @@ export interface Section {
 
 export interface ProjectDetail extends Project {
   sections: Section[];
+  username: string;
+  profile_photo_url: string | null;
+  adds_count: number;
 }
 
 export interface Progress {
@@ -107,8 +115,36 @@ export function createUser(username: string) {
   });
 }
 
-export function getUser(userId: string) {
-  return apiFetch<User>(`/api/users/${userId}`);
+export function getUser(userId: string, viewerId?: string) {
+  const qs = viewerId ? `?viewer_id=${encodeURIComponent(viewerId)}` : '';
+  return apiFetch<User>(`/api/users/${userId}${qs}`);
+}
+
+export function searchUsers(query: string, viewerId?: string) {
+  const params = new URLSearchParams({ q: query });
+  if (viewerId) params.set('viewer_id', viewerId);
+  return apiFetch<User[]>(`/api/users/search?${params.toString()}`);
+}
+
+export function followUser(userId: string, targetId: string) {
+  return apiFetch<{ ok: boolean }>(`/api/users/${userId}/follow`, {
+    method: 'POST',
+    body: JSON.stringify({ target_id: targetId }),
+  });
+}
+
+export function unfollowUser(userId: string, targetId: string) {
+  return apiFetch<{ ok: boolean }>(`/api/users/${userId}/follow/${targetId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function getFollowers(userId: string) {
+  return apiFetch<User[]>(`/api/users/${userId}/followers`);
+}
+
+export function getFollowing(userId: string) {
+  return apiFetch<User[]>(`/api/users/${userId}/following`);
 }
 
 export function getUserByUsername(username: string) {
@@ -139,8 +175,17 @@ export function createProject(data: {
   });
 }
 
-export function getPublicProjects() {
-  return apiFetch<ProjectWithUser[]>('/api/projects');
+export function getPublicProjects(opts?: {
+  filter?: 'all' | 'following';
+  viewerId?: string;
+  sort?: 'adds' | 'created';
+}) {
+  const params = new URLSearchParams();
+  if (opts?.filter) params.set('filter', opts.filter);
+  if (opts?.viewerId) params.set('viewer_id', opts.viewerId);
+  if (opts?.sort) params.set('sort', opts.sort);
+  const qs = params.toString();
+  return apiFetch<ProjectWithUser[]>(`/api/projects${qs ? `?${qs}` : ''}`);
 }
 
 export function getProjectDetail(id: string, userId: string) {
