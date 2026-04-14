@@ -2,8 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { CircularProgress } from './circular-progress';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import {
+  BrutalColors,
+  BrutalFonts,
+  BrutalTokens,
+  YarnySizes,
+} from '@/constants/theme';
 import { IconSymbol } from './ui/icon-symbol';
+import { BrutalShadow } from './brutal/brutal-shadow';
+import { HatchPattern } from './brutal/hatch-pattern';
 
 interface ProjectCardProps {
   title: string;
@@ -45,102 +52,131 @@ export function ProjectCard({
   selected = false,
 }: ProjectCardProps) {
   return (
-    <TouchableOpacity
-      style={[styles.card, selected && styles.cardSelected]}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      delayLongPress={350}
-      activeOpacity={0.8}
-    >
-      {selectionMode && (
-        <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-          {selected && (
-            <IconSymbol name="checkmark" size={16} color={YarnyColors.textSecondary} />
+    <BrutalShadow style={styles.shadowWrap}>
+      <TouchableOpacity
+        style={[styles.card, selected && styles.cardSelected]}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={350}
+        activeOpacity={0.85}
+      >
+        {selectionMode && (
+          <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+            {selected && (
+              <IconSymbol name="checkmark" size={16} color={BrutalColors.outline} />
+            )}
+          </View>
+        )}
+        <View style={styles.imageWrap}>
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.image} />
+          ) : (
+            <>
+              <View style={[styles.image, styles.imagePlaceholder]} />
+              <View style={StyleSheet.absoluteFill}>
+                <HatchPattern width="100%" height="100%" spacing={7} strokeWidth={2} />
+              </View>
+            </>
           )}
         </View>
-      )}
-      {imageUrl ? (
-        <Image source={{ uri: imageUrl }} style={styles.image} />
-      ) : (
-        <View style={[styles.image, styles.imagePlaceholder]} />
-      )}
-      <View style={styles.info}>
-        <Text style={styles.title}>{title}</Text>
-        {authorUsername && (
-          <Text style={styles.author}>
-            {isOwn ? 'your project' : `by @${authorUsername}`}
+        <View style={styles.info}>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
           </Text>
-        )}
-        <View style={styles.row}>
-          <CircularProgress percent={percentComplete} size={40} strokeWidth={3} />
-          <Text style={styles.detail}>complete</Text>
+          {authorUsername && (
+            <Text style={styles.author}>
+              {isOwn ? 'your project' : `by @${authorUsername}`}
+            </Text>
+          )}
+          <View style={styles.row}>
+            <CircularProgress
+              percent={percentComplete}
+              size={40}
+              strokeWidth={3}
+              trackColor={BrutalColors.outline}
+              fillColor={BrutalColors.yellow}
+              labelColor={BrutalColors.textPrimary}
+            />
+            <Text style={styles.detail}>complete</Text>
+          </View>
+          <View style={styles.row}>
+            <IconSymbol name="house.fill" size={18} color={BrutalColors.outline} />
+            <Text style={styles.detail}>
+              {lastWorkedAt ? `last worked ${formatLastWorked(lastWorkedAt)}` : 'Not started yet'}
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <IconSymbol name="person.fill" size={18} color={BrutalColors.outline} />
+            <Text style={styles.detail}>{isPublic ? 'public project' : 'private project'}</Text>
+          </View>
         </View>
-        <View style={styles.row}>
-          <IconSymbol name="house.fill" size={18} color={YarnyColors.textPrimary} />
-          <Text style={styles.detail}>
-            {lastWorkedAt ? `last worked ${formatLastWorked(lastWorkedAt)}` : 'Not started yet'}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <IconSymbol name="person.fill" size={18} color={YarnyColors.textPrimary} />
-          <Text style={styles.detail}>{isPublic ? 'public project' : 'private project'}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </BrutalShadow>
   );
 }
 
 const styles = StyleSheet.create({
+  shadowWrap: {
+    marginBottom: 16,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   card: {
     flexDirection: 'row',
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
     padding: 12,
-    marginBottom: 12,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
   },
   cardSelected: {
-    borderColor: YarnyColors.button,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.pink,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: YarnyColors.textSecondary,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
+    backgroundColor: BrutalColors.surface,
     marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxSelected: {
-    backgroundColor: YarnyColors.button,
-    borderColor: YarnyColors.button,
+    backgroundColor: BrutalColors.pink,
   },
-  image: {
+  imageWrap: {
     width: 90,
     height: 90,
-    borderRadius: 8,
+    borderRadius: 6,
+    overflow: 'hidden',
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   imagePlaceholder: {
-    backgroundColor: YarnyColors.border,
+    backgroundColor: BrutalColors.yellow,
   },
   info: {
     flex: 1,
     marginLeft: 12,
   },
   title: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.3,
     marginBottom: 4,
   },
   author: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.body,
     fontSize: 12,
-    color: YarnyColors.textSecondary,
-    opacity: 0.85,
+    color: BrutalColors.textPrimary,
     fontStyle: 'italic',
     marginBottom: 4,
   },
@@ -151,8 +187,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   detail: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: 14,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
 });

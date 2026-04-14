@@ -16,7 +16,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useUser } from '@/hooks/use-user';
 import { getUser, updateUser, uploadImage } from '@/services/api';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 
 export default function EditProfileScreen() {
   const { userId } = useUser();
@@ -79,7 +80,7 @@ export default function EditProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
@@ -90,18 +91,18 @@ export default function EditProfileScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.replace('/(tabs)/profile')} style={styles.backButton}>
-          <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+          <IconSymbol name="chevron.right" size={24} color={BrutalColors.outline} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={styles.headerTitle}>EDIT PROFILE</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <TouchableOpacity style={styles.photoWrapper} onPress={pickPhoto} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.photoWrapper} onPress={pickPhoto} activeOpacity={0.85}>
           {displayPhoto ? (
             <Image source={{ uri: displayPhoto }} style={styles.photo} />
           ) : (
             <View style={[styles.photo, styles.photoPlaceholder]}>
-              <IconSymbol name="person.fill" size={48} color={YarnyColors.textSecondary} />
+              <IconSymbol name="person.fill" size={48} color={BrutalColors.outline} />
             </View>
           )}
           <Text style={styles.photoHint}>Tap to change photo</Text>
@@ -113,25 +114,27 @@ export default function EditProfileScreen() {
           value={bio}
           onChangeText={setBio}
           placeholder="Tell others about yourself..."
-          placeholderTextColor={YarnyColors.border}
+          placeholderTextColor="#8A8A8A"
           multiline
           numberOfLines={4}
           maxLength={280}
         />
         <Text style={styles.charCount}>{bio.length}/280</Text>
 
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-          activeOpacity={0.8}
-        >
-          {saving ? (
-            <ActivityIndicator color={YarnyColors.textSecondary} />
-          ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
-          )}
-        </TouchableOpacity>
+        <BrutalShadow style={styles.saveButtonShadow}>
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.85}
+          >
+            {saving ? (
+              <ActivityIndicator color={BrutalColors.outline} />
+            ) : (
+              <Text style={styles.saveButtonText}>SAVE</Text>
+            )}
+          </TouchableOpacity>
+        </BrutalShadow>
       </ScrollView>
     </SafeAreaView>
   );
@@ -140,22 +143,25 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     paddingHorizontal: 16,
   },
   backButton: {
     marginRight: 12,
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.5,
   },
   content: {
     padding: 16,
@@ -168,56 +174,67 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
   },
   photoPlaceholder: {
-    backgroundColor: YarnyColors.card,
+    backgroundColor: BrutalColors.pink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   photoHint: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.button,
+    color: BrutalColors.outline,
     marginTop: 8,
     textDecorationLine: 'underline',
   },
   label: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   bioInput: {
-    backgroundColor: YarnyColors.border,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     minHeight: 100,
     textAlignVertical: 'top',
   },
   charCount: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.border,
+    color: BrutalColors.textPrimary,
     textAlign: 'right',
     marginTop: 4,
     marginBottom: 24,
   },
+  saveButtonShadow: {
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   saveButton: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 14,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    paddingVertical: 16,
     alignItems: 'center',
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.2,
   },
 });

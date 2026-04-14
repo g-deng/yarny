@@ -16,7 +16,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '@/hooks/use-user';
 import { getUserProjects, deleteProject, type ProjectWithProgress } from '@/services/api';
 import { ProjectCard } from '@/components/project-card';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
+import {
+  BrutalColors,
+  BrutalFonts,
+  BrutalTokens,
+  YarnySizes,
+} from '@/constants/theme';
 
 export default function HomeScreen() {
   const { userId, loading: userLoading } = useUser();
@@ -118,41 +124,45 @@ export default function HomeScreen() {
   if (userLoading || loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        {selectionMode ? (
-          <View style={styles.selectionHeader}>
-            <TouchableOpacity onPress={exitSelection} disabled={deleting}>
-              <Text style={styles.headerAction}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{selectedIds.size} selected</Text>
-            <TouchableOpacity onPress={confirmDelete} disabled={deleting}>
-              <Text style={[styles.headerAction, styles.headerActionDanger]}>
-                {deleting ? '...' : 'Delete'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <Text style={styles.headerTitle}>Home</Text>
-        )}
+      <View style={styles.headerOuter}>
+        <View style={styles.header}>
+          {selectionMode ? (
+            <View style={styles.selectionHeader}>
+              <TouchableOpacity onPress={exitSelection} disabled={deleting}>
+                <Text style={styles.headerAction}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>{selectedIds.size} SELECTED</Text>
+              <TouchableOpacity onPress={confirmDelete} disabled={deleting}>
+                <Text style={[styles.headerAction, styles.headerActionDanger]}>
+                  {deleting ? '...' : 'DELETE'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text style={styles.headerTitle}>HOME</Text>
+          )}
+        </View>
       </View>
-      <Text style={styles.subtitle}>Let's make something amazing!</Text>
+      <Text style={styles.subtitle}>Let&apos;s make something amazing!</Text>
 
       {projects.length === 0 ? (
         <View style={styles.emptyState}>
-          <TouchableOpacity
-            style={styles.newButton}
-            onPress={() => router.push('/(tabs)/create')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.newButtonText}>New project</Text>
-          </TouchableOpacity>
+          <BrutalShadow style={{ marginRight: BrutalTokens.shadowOffset.x }}>
+            <TouchableOpacity
+              style={styles.newButton}
+              onPress={() => router.push('/(tabs)/create')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.newButtonText}>NEW PROJECT</Text>
+            </TouchableOpacity>
+          </BrutalShadow>
         </View>
       ) : (
         <ScrollView
@@ -164,6 +174,7 @@ export default function HomeScreen() {
                 setRefreshing(true);
                 fetchProjects();
               }}
+              tintColor={BrutalColors.outline}
             />
           }
         >
@@ -171,6 +182,7 @@ export default function HomeScreen() {
             title="In progress"
             count={inProgress.length}
             collapsed={inProgressCollapsed}
+            color={BrutalColors.cyan}
             onToggle={() => setInProgressCollapsed((v) => !v)}
           />
           {!inProgressCollapsed &&
@@ -184,6 +196,7 @@ export default function HomeScreen() {
             title="Completed"
             count={completed.length}
             collapsed={completedCollapsed}
+            color={BrutalColors.lime}
             onToggle={() => setCompletedCollapsed((v) => !v)}
           />
           {!completedCollapsed &&
@@ -230,48 +243,61 @@ function SectionHeader({
   title,
   count,
   collapsed,
+  color,
   onToggle,
 }: {
   title: string;
   count: number;
   collapsed: boolean;
+  color: string;
   onToggle: () => void;
 }) {
   return (
-    <TouchableOpacity
-      style={styles.sectionHeader}
-      onPress={onToggle}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.sectionHeaderText}>
-        {title} ({count})
-      </Text>
-      <IconSymbol
-        name="chevron.right"
-        size={18}
-        color={YarnyColors.textPrimary}
-        style={{ transform: [{ rotate: collapsed ? '0deg' : '90deg' }] }}
-      />
-    </TouchableOpacity>
+    <BrutalShadow style={styles.sectionHeaderWrap}>
+      <TouchableOpacity
+        style={[styles.sectionHeader, { backgroundColor: color }]}
+        onPress={onToggle}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.sectionHeaderText}>
+          {title.toUpperCase()} ({count})
+        </Text>
+        <IconSymbol
+          name="chevron.right"
+          size={20}
+          color={BrutalColors.outline}
+          style={{ transform: [{ rotate: collapsed ? '0deg' : '90deg' }] }}
+        />
+      </TouchableOpacity>
+    </BrutalShadow>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
+  },
+  headerOuter: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   header: {
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    borderRadius: BrutalTokens.radius,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.5,
   },
   selectionHeader: {
     flexDirection: 'row',
@@ -280,57 +306,69 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerAction: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   headerActionDanger: {
-    color: '#ffdede',
+    color: BrutalColors.red,
   },
   subtitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
-    padding: 16,
+    color: BrutalColors.textPrimary,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   emptyState: {
     flex: 1,
     paddingHorizontal: 16,
   },
   newButton: {
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: BrutalColors.yellow,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    borderRadius: BrutalTokens.radius,
+    paddingVertical: 18,
     alignItems: 'center',
   },
   newButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.2,
   },
   list: {
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
+  sectionHeaderWrap: {
+    marginTop: 12,
+    marginBottom: 12,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    marginTop: 8,
-    borderBottomWidth: 2,
-    borderBottomColor: YarnyColors.button,
-    marginBottom: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
+    borderRadius: BrutalTokens.radius,
   },
   sectionHeaderText: {
-    fontFamily: YarnyFonts.header,
-    fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
+    fontFamily: BrutalFonts.black,
+    fontSize: YarnySizes.body,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   emptySection: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.border,
+    color: BrutalColors.outline,
     fontStyle: 'italic',
     marginBottom: 12,
     paddingLeft: 4,

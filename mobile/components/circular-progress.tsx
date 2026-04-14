@@ -7,9 +7,19 @@ interface CircularProgressProps {
   percent: number;
   size?: number;
   strokeWidth?: number;
+  trackColor?: string;
+  fillColor?: string;
+  labelColor?: string;
 }
 
-export function CircularProgress({ percent, size = 48, strokeWidth = 4 }: CircularProgressProps) {
+export function CircularProgress({
+  percent,
+  size = 48,
+  strokeWidth = 4,
+  trackColor = YarnyColors.border,
+  fillColor = YarnyColors.button,
+  labelColor = YarnyColors.textPrimary,
+}: CircularProgressProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percent / 100) * circumference;
@@ -21,7 +31,7 @@ export function CircularProgress({ percent, size = 48, strokeWidth = 4 }: Circul
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={YarnyColors.border}
+          stroke={trackColor}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -29,7 +39,7 @@ export function CircularProgress({ percent, size = 48, strokeWidth = 4 }: Circul
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={YarnyColors.button}
+          stroke={fillColor}
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={`${circumference}`}
@@ -39,7 +49,9 @@ export function CircularProgress({ percent, size = 48, strokeWidth = 4 }: Circul
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
-      <Text style={[styles.label, { fontSize: size * 0.22 }]}>{Math.round(percent)}%</Text>
+      <Text style={[styles.label, { fontSize: size * 0.22, color: labelColor }]}>
+        {Math.round(percent)}%
+      </Text>
     </View>
   );
 }
@@ -48,6 +60,5 @@ const styles = StyleSheet.create({
   label: {
     position: 'absolute',
     fontFamily: YarnyFonts.bodySemiBold,
-    color: YarnyColors.textPrimary,
   },
 });

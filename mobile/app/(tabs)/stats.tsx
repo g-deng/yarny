@@ -10,7 +10,8 @@ import {
   type ActivityLogEntry,
 } from '@/services/api';
 import { StatCard } from '@/components/stat-card';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
 
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -59,9 +60,9 @@ export default function StatsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Statistics</Text>
+          <Text style={styles.headerTitle}>STATISTICS</Text>
         </View>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
@@ -69,13 +70,14 @@ export default function StatsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Statistics</Text>
+        <Text style={styles.headerTitle}>STATISTICS</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {stats ? (
           <>
             <StatCard
               title="Today"
+              color={BrutalColors.yellow}
               stats={[
                 { label: 'rows', value: stats.rows.today },
                 { label: 'yards of yarn', value: stats.yards.used },
@@ -83,12 +85,14 @@ export default function StatsScreen() {
             />
             <StatCard
               title="All Time"
+              color={BrutalColors.cyan}
               stats={[
                 { label: 'rows', value: stats.rows.all_time.toLocaleString() },
                 { label: 'yards of yarn', value: stats.yards.used.toLocaleString() },
               ]}
             />
 
+            <BrutalShadow style={styles.recordShadow}>
             <View style={styles.recordCard}>
               <Text style={styles.recordTitle}>Recent Activity</Text>
               {activity.length === 0 ? (
@@ -123,6 +127,7 @@ export default function StatsScreen() {
                 </>
               )}
             </View>
+            </BrutalShadow>
           </>
         ) : (
           <Text style={styles.noData}>No stats yet. Start a project!</Text>
@@ -135,70 +140,79 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.5,
   },
   content: {
     padding: 16,
   },
+  recordShadow: {
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   recordCard: {
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.lime,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     padding: 16,
   },
   recordTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginBottom: 12,
+    letterSpacing: 0.5,
   },
   placeholderText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: YarnyColors.border,
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: BrutalColors.outline,
     gap: 12,
   },
   activityDelta: {
-    fontFamily: YarnyFonts.bodyBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     minWidth: 70,
   },
   activityInfo: {
     flex: 1,
   },
   activityTitle: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.bold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   activityTime: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.border,
+    color: BrutalColors.textPrimary,
     fontStyle: 'italic',
     marginTop: 2,
   },
   noData: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginTop: 40,
   },
@@ -208,9 +222,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   expandButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     textDecorationLine: 'underline',
+    letterSpacing: 0.5,
   },
 });

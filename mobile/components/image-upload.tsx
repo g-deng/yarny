@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
+import { HatchPattern } from './brutal/hatch-pattern';
 
 interface ImageUploadProps {
   imageUri: string | null;
@@ -23,11 +24,14 @@ export function ImageUpload({ imageUri, onImageSelected }: ImageUploadProps) {
   return (
     <View>
       <Text style={styles.label}>Upload image</Text>
-      <TouchableOpacity style={styles.area} onPress={pickImage} activeOpacity={0.7}>
+      <TouchableOpacity style={styles.area} onPress={pickImage} activeOpacity={0.85}>
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.preview} />
         ) : (
-          <View style={styles.placeholder} />
+          <View style={styles.placeholder}>
+            <HatchPattern width="100%" height="100%" spacing={10} strokeWidth={2} />
+            <Text style={styles.placeholderText}>Tap to add image</Text>
+          </View>
         )}
       </TouchableOpacity>
     </View>
@@ -36,15 +40,18 @@ export function ImageUpload({ imageUri, onImageSelected }: ImageUploadProps) {
 
 const styles = StyleSheet.create({
   label: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   area: {
-    borderRadius: 12,
+    borderRadius: BrutalTokens.radius,
     overflow: 'hidden',
-    backgroundColor: YarnyColors.border,
+    backgroundColor: BrutalColors.cyan,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     height: 160,
   },
   preview: {
@@ -53,6 +60,20 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     flex: 1,
-    backgroundColor: YarnyColors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    position: 'absolute',
+    fontFamily: BrutalFonts.black,
+    fontSize: 16,
+    color: BrutalColors.textPrimary,
+    backgroundColor: BrutalColors.surface,
+    borderWidth: 2,
+    borderColor: BrutalColors.outline,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    letterSpacing: 0.5,
   },
 });

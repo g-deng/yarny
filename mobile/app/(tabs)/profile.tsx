@@ -21,7 +21,8 @@ import {
   type ProjectWithProgress,
 } from '@/services/api';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 
 export default function ProfileScreen() {
   const { userId, loading: userLoading, logOut } = useUser();
@@ -62,9 +63,9 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerTitle}>PROFILE</Text>
         </View>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
@@ -72,7 +73,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>PROFILE</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {user?.profile_photo_url ? (
@@ -118,13 +119,15 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push('/edit-profile')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.editButtonText}>Edit profile</Text>
-        </TouchableOpacity>
+        <BrutalShadow style={styles.editButtonShadow}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => router.push('/edit-profile')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.editButtonText}>EDIT PROFILE</Text>
+          </TouchableOpacity>
+        </BrutalShadow>
 
         <Text style={styles.sectionHeader}>In progress</Text>
         {inProgress.length === 0 ? (
@@ -140,7 +143,7 @@ export default function ProfileScreen() {
               {p.image_url ? (
                 <Image source={{ uri: p.image_url }} style={styles.projectImage} />
               ) : (
-                <View style={[styles.projectImage, { backgroundColor: YarnyColors.border }]} />
+                <View style={[styles.projectImage, { backgroundColor: BrutalColors.yellow }]} />
               )}
               <Text style={styles.projectTitle} numberOfLines={1}>
                 {p.title}
@@ -163,7 +166,7 @@ export default function ProfileScreen() {
               {p.image_url ? (
                 <Image source={{ uri: p.image_url }} style={styles.projectImage} />
               ) : (
-                <View style={[styles.projectImage, { backgroundColor: YarnyColors.border }]} />
+                <View style={[styles.projectImage, { backgroundColor: BrutalColors.yellow }]} />
               )}
               <Text style={styles.projectTitle} numberOfLines={1}>
                 {p.title}
@@ -172,16 +175,18 @@ export default function ProfileScreen() {
           ))
         )}
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={async () => {
-            await logOut();
-            router.replace('/welcome');
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.logoutButtonText}>Log out</Text>
-        </TouchableOpacity>
+        <BrutalShadow style={styles.logoutButtonShadow}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={async () => {
+              await logOut();
+              router.replace('/welcome');
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.logoutButtonText}>LOG OUT</Text>
+          </TouchableOpacity>
+        </BrutalShadow>
       </ScrollView>
     </SafeAreaView>
   );
@@ -190,62 +195,68 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.5,
   },
   content: {
     padding: 20,
     alignItems: 'center',
   },
   photo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     marginBottom: 12,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
   },
   avatarFallback: {
-    backgroundColor: YarnyColors.card,
+    backgroundColor: BrutalColors.pink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.title,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   username: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 2,
+    letterSpacing: 0.5,
   },
   memberSince: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 12,
   },
   bio: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginBottom: 16,
     paddingHorizontal: 8,
   },
   bioEmpty: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.border,
+    color: '#8A8A8A',
     fontStyle: 'italic',
     marginBottom: 16,
   },
@@ -259,83 +270,99 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   countNumber: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   countLabel: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   countDivider: {
-    width: 1,
+    width: 2,
     height: 30,
-    backgroundColor: YarnyColors.border,
+    backgroundColor: BrutalColors.outline,
+  },
+  editButtonShadow: {
+    marginBottom: 24,
+    marginRight: BrutalTokens.shadowOffset.x,
   },
   editButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 10,
+    backgroundColor: BrutalColors.cyan,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    borderRadius: BrutalTokens.radius,
+    paddingVertical: 12,
     paddingHorizontal: 32,
-    marginBottom: 24,
   },
   editButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.button,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   sectionHeader: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     alignSelf: 'stretch',
-    borderBottomWidth: 2,
-    borderBottomColor: YarnyColors.button,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
     paddingBottom: 4,
     marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 12,
+    letterSpacing: 0.5,
   },
   emptyProjects: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.border,
+    color: '#8A8A8A',
     fontStyle: 'italic',
     marginVertical: 16,
   },
   projectCard: {
     alignSelf: 'stretch',
     flexDirection: 'row',
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     padding: 10,
-    marginBottom: 8,
+    marginBottom: 10,
     alignItems: 'center',
   },
   projectImage: {
     width: 50,
     height: 50,
-    borderRadius: 8,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: BrutalColors.outline,
   },
   projectTitle: {
     flex: 1,
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginLeft: 12,
+    letterSpacing: 0.3,
+  },
+  logoutButtonShadow: {
+    marginTop: 24,
+    marginRight: BrutalTokens.shadowOffset.x,
   },
   logoutButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.red,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    borderRadius: BrutalTokens.radius,
+    paddingVertical: 14,
     paddingHorizontal: 48,
-    marginTop: 24,
   },
   logoutButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.button,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.2,
   },
 });

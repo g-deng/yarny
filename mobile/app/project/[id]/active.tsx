@@ -40,7 +40,7 @@ import {
   type Comment,
 } from '@/services/api';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
 
 export default function ActiveCrochetingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -373,7 +373,7 @@ export default function ActiveCrochetingScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
@@ -394,7 +394,7 @@ export default function ActiveCrochetingScreen() {
       >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.replace(`/project/${id}/details`)} style={styles.backButton}>
-          <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+          <IconSymbol name="chevron.right" size={24} color={BrutalColors.outline} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {project.title}
@@ -404,7 +404,7 @@ export default function ActiveCrochetingScreen() {
           style={styles.menuButton}
           hitSlop={10}
         >
-          <IconSymbol name="ellipsis" size={24} color={YarnyColors.textSecondary} />
+          <IconSymbol name="ellipsis" size={24} color={BrutalColors.outline} />
         </TouchableOpacity>
       </View>
 
@@ -537,7 +537,7 @@ export default function ActiveCrochetingScreen() {
           )}
         </View>
       ) : (
-        <View style={[styles.projectImage, { backgroundColor: YarnyColors.border }]} />
+        <View style={[styles.projectImage, { backgroundColor: BrutalColors.yellow }]} />
       )}
 
       <Reanimated.View
@@ -586,7 +586,7 @@ export default function ActiveCrochetingScreen() {
                   <TextInput
                     style={styles.commentInput}
                     placeholder={pendingCoords ? 'Write your pinned comment...' : 'Write your comment...'}
-                    placeholderTextColor={YarnyColors.border}
+                    placeholderTextColor={BrutalColors.outline}
                     value={newComment}
                     onChangeText={setNewComment}
                     multiline
@@ -599,7 +599,7 @@ export default function ActiveCrochetingScreen() {
                       disabled={!newComment.trim() || postingComment}
                     >
                       {postingComment ? (
-                        <ActivityIndicator size="small" color={YarnyColors.textSecondary} />
+                        <ActivityIndicator size="small" color={BrutalColors.outline} />
                       ) : (
                         <Text style={styles.commentPostText}>Post</Text>
                       )}
@@ -649,7 +649,7 @@ export default function ActiveCrochetingScreen() {
               activeOpacity={0.8}
             >
               {advancing ? (
-                <ActivityIndicator color={YarnyColors.textSecondary} />
+                <ActivityIndicator color={BrutalColors.outline} />
               ) : (
                 <Text style={styles.nextButtonText}>Restart project</Text>
               )}
@@ -671,7 +671,7 @@ export default function ActiveCrochetingScreen() {
                 activeOpacity={0.8}
               >
                 {advancing ? (
-                  <ActivityIndicator color={YarnyColors.textSecondary} />
+                  <ActivityIndicator color={BrutalColors.outline} />
                 ) : (
                   <Text style={styles.nextButtonText}>Next row</Text>
                 )}
@@ -689,13 +689,15 @@ export default function ActiveCrochetingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     paddingHorizontal: 16,
   },
   backButton: {
@@ -703,9 +705,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.5,
   },
   menuButton: {
     marginLeft: 12,
@@ -721,32 +724,29 @@ const styles = StyleSheet.create({
   },
   menu: {
     position: 'absolute',
-    top: 72,
+    top: 78,
     right: 12,
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     paddingVertical: 4,
-    minWidth: 220,
+    minWidth: 240,
     zIndex: 11,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
   },
   menuItem: {
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
   menuItemText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.3,
   },
   menuDivider: {
-    height: 1,
-    backgroundColor: YarnyColors.border,
-    marginHorizontal: 8,
+    height: 2,
+    backgroundColor: BrutalColors.outline,
   },
   projectImage: {
     width: '100%',
@@ -761,29 +761,31 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: '100%',
     alignSelf: 'center',
-    backgroundColor: YarnyColors.border,
-    borderRadius: 8,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     overflow: 'hidden',
   },
   pin: {
     position: 'absolute',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: YarnyColors.button,
-    borderWidth: 2,
-    borderColor: YarnyColors.textSecondary,
-    marginLeft: -9,
-    marginTop: -9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: BrutalColors.pink,
+    borderWidth: 3,
+    borderColor: BrutalColors.outline,
+    marginLeft: -10,
+    marginTop: -10,
   },
   pinActive: {
-    backgroundColor: YarnyColors.textSecondary,
-    borderColor: YarnyColors.button,
+    backgroundColor: BrutalColors.yellow,
+    borderColor: BrutalColors.outline,
     transform: [{ scale: 1.3 }],
   },
   pinPending: {
     backgroundColor: 'transparent',
-    borderColor: YarnyColors.button,
+    borderColor: BrutalColors.outline,
     borderStyle: 'dashed',
   },
   addBanner: {
@@ -791,8 +793,10 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     top: 12,
-    backgroundColor: YarnyColors.button,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -801,76 +805,80 @@ const styles = StyleSheet.create({
   },
   addBannerText: {
     flex: 1,
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: 13,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   addBannerActions: {
     flexDirection: 'row',
     gap: 12,
   },
   addBannerAction: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: 13,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     textDecorationLine: 'underline',
   },
   addBannerCancel: {
     opacity: 0.8,
   },
   bottomCard: {
-    backgroundColor: YarnyColors.card,
+    backgroundColor: BrutalColors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    borderTopWidth: BrutalTokens.borderWidthThick,
+    borderLeftWidth: BrutalTokens.borderWidthThick,
+    borderRightWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     maxHeight: '60%',
   },
-  instructionDragArea: {
-    // user can pan anywhere on this to toggle the comments sheet
-  },
+  instructionDragArea: {},
   instructionInner: {
     paddingHorizontal: 20,
     paddingBottom: 4,
   },
   dragHandleWrap: {
     alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingTop: 10,
+    paddingBottom: 6,
   },
   dragHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: YarnyColors.border,
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: BrutalColors.outline,
   },
   footerNav: {
     padding: 20,
     paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: YarnyColors.border,
+    borderTopWidth: 2,
+    borderTopColor: BrutalColors.outline,
   },
   commentsSection: {
     marginTop: 12,
     paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: YarnyColors.border,
+    borderTopWidth: 2,
+    borderTopColor: BrutalColors.outline,
   },
   commentsHeader: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginTop: 12,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   commentItem: {
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
     borderRadius: 8,
-    padding: 8,
-    marginBottom: 6,
+    padding: 10,
+    marginBottom: 8,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: BrutalColors.outline,
   },
   commentItemSelected: {
-    borderColor: YarnyColors.button,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.pink,
   },
   commentHeaderRow: {
     flexDirection: 'row',
@@ -878,38 +886,41 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   commentAuthor: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   commentPinBadge: {
     fontSize: 12,
   },
   addCommentButton: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 20,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: 8,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     paddingVertical: 10,
     alignItems: 'center',
     marginTop: 8,
   },
   addCommentButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.5,
   },
   composerButtons: {
     alignItems: 'flex-end',
     gap: 6,
   },
   composerCancel: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: 12,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   commentBody: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginTop: 2,
   },
   commentInputRow: {
@@ -920,41 +931,45 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
     borderRadius: 8,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     maxHeight: 80,
   },
   commentPost: {
-    backgroundColor: YarnyColors.button,
+    backgroundColor: BrutalColors.yellow,
     borderRadius: 8,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   commentPostText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   sectionName: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     fontStyle: 'italic',
     marginBottom: 4,
   },
   instruction: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginBottom: 16,
   },
   instructionLabel: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
   },
   rowButtons: {
     flexDirection: 'row',
@@ -962,50 +977,55 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   nextButton: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 24,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 10,
   },
   nextButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   prevButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.textSecondary,
-    borderRadius: 24,
+    backgroundColor: BrutalColors.surface,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    borderRadius: BrutalTokens.radius,
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   prevButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   detailsButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
-    borderRadius: 24,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    borderRadius: BrutalTokens.radius,
     paddingVertical: 12,
     alignItems: 'center',
   },
   detailsButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   errorText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginTop: 40,
   },

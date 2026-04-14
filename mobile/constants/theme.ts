@@ -51,6 +51,35 @@ export const YarnySizes = {
   caption: 14,
 };
 
+export const BrutalColors = {
+  background: '#FEF6E4',
+  surface: '#FFFFFF',
+  outline: '#0D0D0D',
+  shadow: '#0D0D0D',
+  textPrimary: '#0D0D0D',
+  textOnAccent: '#0D0D0D',
+  yellow: '#FFDB4D',
+  pink: '#FF6B9D',
+  cyan: '#7DD3F2',
+  lime: '#A8E05F',
+  red: '#FF5A5F',
+};
+
+export const BrutalTokens = {
+  borderWidth: 3,
+  borderWidthThick: 4,
+  radius: 10,
+  shadowOffset: { x: 5, y: 5 },
+  shadowOffsetSm: { x: 3, y: 3 },
+};
+
+export const BrutalFonts = {
+  body: 'Montserrat-Regular',
+  semibold: 'Montserrat-SemiBold',
+  bold: 'Montserrat-Bold',
+  black: 'Montserrat-ExtraBold',
+};
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

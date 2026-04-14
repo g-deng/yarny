@@ -13,12 +13,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '@/hooks/use-user';
 import {
   getProjectDetail,
-  getUserProjects,
-  removeProjectTracking,
   type ProjectDetail,
 } from '@/services/api';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, YarnySizes } from '@/constants/theme';
 
 export default function PdfViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,9 +24,6 @@ export default function PdfViewerScreen() {
   const router = useRouter();
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
-  const [isTracking, setIsTracking] = useState(false);
-  const [isOwnProject, setIsOwnProject] = useState(false);
-  const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
@@ -36,13 +31,8 @@ export default function PdfViewerScreen() {
       if (!id || !userId) return;
       (async () => {
         try {
-          const [detail, userProjects] = await Promise.all([
-            getProjectDetail(id, userId),
-            getUserProjects(userId),
-          ]);
+          const detail = await getProjectDetail(id, userId);
           setProject(detail);
-          setIsOwnProject(detail.user_id === userId);
-          setIsTracking(!!userProjects.find((p) => p.id === id));
         } catch (err) {
           console.error('Failed to fetch project:', err);
         } finally {
@@ -52,23 +42,10 @@ export default function PdfViewerScreen() {
     }, [id, userId])
   );
 
-  const handleRemoveProject = async () => {
-    if (!userId || !id) return;
-    setAdding(true);
-    try {
-      await removeProjectTracking(userId, id);
-      setIsTracking(false);
-    } catch (err) {
-      console.error('Failed to remove project:', err);
-    } finally {
-      setAdding(false);
-    }
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
@@ -90,25 +67,10 @@ export default function PdfViewerScreen() {
           onPress={() => router.replace(`/project/${id}/details`)}
           style={styles.backButton}
         >
-          <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+          <IconSymbol name="chevron.right" size={24} color={BrutalColors.outline} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Pdf Viewer</Text>
       </View>
-
-      {!isOwnProject && isTracking && (
-        <TouchableOpacity
-          style={[styles.removeButton, adding && styles.addButtonDisabled]}
-          onPress={handleRemoveProject}
-          disabled={adding}
-          activeOpacity={0.8}
-        >
-          {adding ? (
-            <ActivityIndicator color={YarnyColors.button} />
-          ) : (
-            <Text style={styles.removeButtonText}>Remove from library</Text>
-          )}
-        </TouchableOpacity>
-      )}
 
       {pdfUrl ? (
         Platform.OS === 'web' ? (
@@ -125,7 +87,7 @@ export default function PdfViewerScreen() {
                 style={styles.webview}
                 startInLoadingState
                 renderLoading={() => (
-                  <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+                  <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
                 )}
               />
             );
@@ -143,52 +105,25 @@ export default function PdfViewerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: 4,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     paddingHorizontal: 16,
   },
   backButton: {
     marginRight: 12,
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
-  },
-  addButton: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 14,
-    alignItems: 'center',
-    margin: 16,
-    marginBottom: 0,
-  },
-  addButtonDisabled: {
-    opacity: 0.6,
-  },
-  addButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
-    fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
-  },
-  removeButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 14,
-    alignItems: 'center',
-    margin: 16,
-    marginBottom: 0,
-  },
-  removeButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
-    fontSize: YarnySizes.body,
-    color: YarnyColors.button,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   webview: {
     flex: 1,
@@ -202,14 +137,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noPdfText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   errorText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginTop: 40,
   },

@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { useUser } from '@/hooks/use-user';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 
 type Mode = 'signup' | 'login';
 
@@ -106,20 +107,22 @@ export default function WelcomeScreen() {
 
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        <TouchableOpacity
-          style={[styles.button, saving && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={saving}
-          activeOpacity={0.8}
-        >
-          {saving ? (
-            <ActivityIndicator color={YarnyColors.textSecondary} />
-          ) : (
-            <Text style={styles.buttonText}>
-              {mode === 'signup' ? 'Get Started' : 'Log In'}
-            </Text>
-          )}
-        </TouchableOpacity>
+        <BrutalShadow style={styles.buttonShadow}>
+          <TouchableOpacity
+            style={[styles.button, saving && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={saving}
+            activeOpacity={0.85}
+          >
+            {saving ? (
+              <ActivityIndicator color={BrutalColors.outline} />
+            ) : (
+              <Text style={styles.buttonText}>
+                {mode === 'signup' ? 'GET STARTED' : 'LOG IN'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </BrutalShadow>
 
         <TouchableOpacity onPress={toggleMode} style={styles.toggleLink}>
           <Text style={styles.toggleText}>
@@ -136,7 +139,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   inner: {
     flex: 1,
@@ -144,49 +147,57 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   title: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.title,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
+    letterSpacing: 1,
   },
   subtitle: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginBottom: 40,
   },
   label: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: YarnyColors.border,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
   },
   inputError: {
-    borderColor: '#D32F2F',
+    borderColor: BrutalColors.red,
   },
   errorText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.bold,
     fontSize: YarnySizes.caption,
-    color: '#D32F2F',
+    color: BrutalColors.red,
     marginBottom: 16,
   },
+  buttonShadow: {
+    marginTop: 12,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   button: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 24,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     paddingVertical: 16,
     alignItems: 'center',
   },
@@ -194,18 +205,19 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.2,
   },
   toggleLink: {
     marginTop: 20,
     alignItems: 'center',
   },
   toggleText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.button,
+    color: BrutalColors.outline,
     textDecorationLine: 'underline',
   },
 });

@@ -21,7 +21,13 @@ import {
   type Project,
 } from '@/services/api';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import {
+  BrutalColors,
+  BrutalFonts,
+  BrutalTokens,
+  YarnySizes,
+} from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,7 +65,6 @@ export default function UserProfileScreen() {
     if (!viewerId || !user || busy) return;
     const wasFollowing = !!user.is_following;
     setBusy(true);
-    // Optimistic
     setUser({
       ...user,
       is_following: !wasFollowing,
@@ -70,7 +75,6 @@ export default function UserProfileScreen() {
       else await followUser(viewerId, user.id);
     } catch (err) {
       console.error('Follow toggle failed:', err);
-      // revert
       setUser({
         ...user,
         is_following: wasFollowing,
@@ -86,12 +90,12 @@ export default function UserProfileScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <IconSymbol name="chevron.right" size={22} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconSymbol name="chevron.right" size={22} color={BrutalColors.outline} style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerTitle}>PROFILE</Text>
           <View style={styles.backButton} />
         </View>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
@@ -100,9 +104,9 @@ export default function UserProfileScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol name="chevron.right" size={22} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+          <IconSymbol name="chevron.right" size={22} color={BrutalColors.outline} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{user.username}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{user.username.toUpperCase()}</Text>
         <View style={styles.backButton} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -150,28 +154,25 @@ export default function UserProfileScreen() {
         </View>
 
         {!isOwnProfile && (
-          <TouchableOpacity
-            style={[
-              styles.followButton,
-              user.is_following && styles.followingButton,
-              busy && { opacity: 0.6 },
-            ]}
-            onPress={handleToggleFollow}
-            disabled={busy}
-            activeOpacity={0.8}
-          >
-            <Text
+          <BrutalShadow style={styles.followButtonShadow}>
+            <TouchableOpacity
               style={[
-                styles.followButtonText,
-                user.is_following && styles.followingButtonText,
+                styles.followButton,
+                user.is_following && styles.followingButton,
+                busy && { opacity: 0.6 },
               ]}
+              onPress={handleToggleFollow}
+              disabled={busy}
+              activeOpacity={0.85}
             >
-              {user.is_following ? 'Following' : 'Follow'}
-            </Text>
-          </TouchableOpacity>
+              <Text style={styles.followButtonText}>
+                {user.is_following ? 'FOLLOWING' : 'FOLLOW'}
+              </Text>
+            </TouchableOpacity>
+          </BrutalShadow>
         )}
 
-        <Text style={styles.sectionHeader}>Public projects</Text>
+        <Text style={styles.sectionHeader}>PUBLIC PROJECTS</Text>
         {projects.length === 0 ? (
           <Text style={styles.emptyProjects}>No public projects yet</Text>
         ) : (
@@ -180,12 +181,12 @@ export default function UserProfileScreen() {
               key={p.id}
               style={styles.projectCard}
               onPress={() => router.push(`/project/${p.id}/details?from=user`)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               {p.image_url ? (
                 <Image source={{ uri: p.image_url }} style={styles.projectImage} />
               ) : (
-                <View style={[styles.projectImage, { backgroundColor: YarnyColors.border }]} />
+                <View style={[styles.projectImage, { backgroundColor: BrutalColors.yellow }]} />
               )}
               <Text style={styles.projectTitle} numberOfLines={1}>
                 {p.title}
@@ -201,11 +202,13 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -216,54 +219,57 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   content: {
     padding: 20,
     alignItems: 'center',
   },
   photo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     marginBottom: 12,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
   },
   avatarFallback: {
-    backgroundColor: YarnyColors.card,
+    backgroundColor: BrutalColors.pink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.title,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   username: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 2,
   },
   memberSince: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 12,
   },
   bio: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginBottom: 16,
     paddingHorizontal: 8,
   },
   bioEmpty: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.border,
+    color: '#8A8A8A',
     fontStyle: 'italic',
     marginBottom: 16,
   },
@@ -277,76 +283,82 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   countNumber: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   countLabel: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   countDivider: {
-    width: 1,
+    width: 2,
     height: 30,
-    backgroundColor: YarnyColors.border,
+    backgroundColor: BrutalColors.outline,
+  },
+  followButtonShadow: {
+    marginBottom: 24,
+    marginRight: BrutalTokens.shadowOffset.x,
   },
   followButton: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 10,
+    backgroundColor: BrutalColors.pink,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    paddingVertical: 12,
     paddingHorizontal: 40,
-    marginBottom: 24,
   },
   followingButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
+    backgroundColor: BrutalColors.lime,
   },
   followButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
-  },
-  followingButtonText: {
-    color: YarnyColors.button,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   sectionHeader: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     alignSelf: 'stretch',
-    borderBottomWidth: 2,
-    borderBottomColor: YarnyColors.button,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
     paddingBottom: 4,
-    marginBottom: 8,
+    marginBottom: 12,
+    letterSpacing: 0.5,
   },
   emptyProjects: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.border,
+    color: '#8A8A8A',
     fontStyle: 'italic',
     marginVertical: 16,
   },
   projectCard: {
     alignSelf: 'stretch',
     flexDirection: 'row',
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     padding: 10,
-    marginBottom: 8,
+    marginBottom: 10,
     alignItems: 'center',
   },
   projectImage: {
     width: 50,
     height: 50,
-    borderRadius: 8,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: BrutalColors.outline,
   },
   projectTitle: {
     flex: 1,
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginLeft: 12,
   },
 });

@@ -7,7 +7,7 @@ import { View, ActivityIndicator } from 'react-native';
 import 'react-native-reanimated';
 
 import { UserProvider, useUser } from '@/hooks/use-user';
-import { YarnyColors } from '@/constants/theme';
+import { BrutalColors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,8 +16,8 @@ function RootNavigator() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: YarnyColors.background }}>
-        <ActivityIndicator size="large" color={YarnyColors.button} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: BrutalColors.background }}>
+        <ActivityIndicator size="large" color={BrutalColors.outline} />
       </View>
     );
   }
@@ -45,6 +45,7 @@ export default function RootLayout() {
     'Montserrat-Regular': require('@expo-google-fonts/montserrat/400Regular/Montserrat_400Regular.ttf'),
     'Montserrat-SemiBold': require('@expo-google-fonts/montserrat/600SemiBold/Montserrat_600SemiBold.ttf'),
     'Montserrat-Bold': require('@expo-google-fonts/montserrat/700Bold/Montserrat_700Bold.ttf'),
+    'Montserrat-ExtraBold': require('@expo-google-fonts/montserrat/800ExtraBold/Montserrat_800ExtraBold.ttf'),
   });
 
   useEffect(() => {

@@ -17,7 +17,8 @@ import { useUser } from '@/hooks/use-user';
 import { createProject, uploadImage, parsePdf } from '@/services/api';
 import { ImageUpload } from '@/components/image-upload';
 import { ToggleSwitch } from '@/components/toggle-switch';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 
 export default function CreateScreen() {
   const { userId } = useUser();
@@ -101,7 +102,7 @@ export default function CreateScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>New Project</Text>
+        <Text style={styles.headerTitle}>NEW PROJECT</Text>
       </View>
 
       <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
@@ -111,7 +112,7 @@ export default function CreateScreen() {
           value={title}
           onChangeText={setTitle}
           placeholder="Project title"
-          placeholderTextColor={YarnyColors.border}
+          placeholderTextColor="#8A8A8A"
         />
 
         <ImageUpload imageUri={imageUri} onImageSelected={setImageUri} />
@@ -125,23 +126,25 @@ export default function CreateScreen() {
 
         {saving && status && (
           <View style={styles.statusRow}>
-            <ActivityIndicator size="small" color={YarnyColors.button} />
+            <ActivityIndicator size="small" color={BrutalColors.outline} />
             <Text style={styles.statusText}>{status}</Text>
           </View>
         )}
 
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-          activeOpacity={0.8}
-        >
-          {saving ? (
-            <ActivityIndicator color={YarnyColors.textSecondary} />
-          ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
-          )}
-        </TouchableOpacity>
+        <BrutalShadow style={styles.saveButtonShadow}>
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.85}
+          >
+            {saving ? (
+              <ActivityIndicator color={BrutalColors.outline} />
+            ) : (
+              <Text style={styles.saveButtonText}>SAVE</Text>
+            )}
+          </TouchableOpacity>
+        </BrutalShadow>
       </ScrollView>
     </SafeAreaView>
   );
@@ -150,17 +153,20 @@ export default function CreateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.5,
   },
   form: {
     flex: 1,
@@ -169,46 +175,57 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   label: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: YarnyColors.border,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 16,
   },
   pdfArea: {
-    backgroundColor: YarnyColors.border,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   pdfText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
+  },
+  saveButtonShadow: {
+    marginTop: 16,
+    marginRight: BrutalTokens.shadowOffset.x,
   },
   saveButton: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 14,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 16,
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.2,
   },
   statusRow: {
     flexDirection: 'row',
@@ -218,9 +235,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statusText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: 14,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
   },
 });

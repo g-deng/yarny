@@ -3,17 +3,23 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { YarnyColors } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens } from '@/constants/theme';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: YarnyColors.button,
-        tabBarInactiveTintColor: YarnyColors.border,
+        tabBarActiveTintColor: BrutalColors.outline,
+        tabBarInactiveTintColor: '#8A8A8A',
+        tabBarLabelStyle: {
+          fontFamily: BrutalFonts.black,
+          fontSize: 11,
+          letterSpacing: 0.5,
+        },
         tabBarStyle: {
-          backgroundColor: YarnyColors.background,
-          borderTopColor: YarnyColors.border,
+          backgroundColor: BrutalColors.yellow,
+          borderTopColor: BrutalColors.outline,
+          borderTopWidth: BrutalTokens.borderWidthThick,
         },
         headerShown: false,
         tabBarButton: HapticTab,

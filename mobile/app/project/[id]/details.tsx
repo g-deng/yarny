@@ -34,7 +34,8 @@ import {
 } from '@/services/api';
 import { CircularProgress } from '@/components/circular-progress';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 
 function formatLastWorked(dateStr: string | null): string {
   if (!dateStr) return 'Not started';
@@ -303,7 +304,7 @@ export default function ProjectDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
@@ -344,7 +345,7 @@ export default function ProjectDetailScreen() {
           }}
           style={styles.backButton}
         >
-          <IconSymbol name="chevron.right" size={24} color={YarnyColors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+          <IconSymbol name="chevron.right" size={24} color={BrutalColors.outline} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {project.title}
@@ -355,7 +356,7 @@ export default function ProjectDetailScreen() {
             style={styles.menuButton}
             hitSlop={10}
           >
-            <IconSymbol name="ellipsis" size={24} color={YarnyColors.textSecondary} />
+            <IconSymbol name="ellipsis" size={24} color={BrutalColors.outline} />
           </TouchableOpacity>
         )}
       </View>
@@ -413,29 +414,33 @@ export default function ProjectDetailScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Hero image — entrance to the tracker */}
         {(inLibrary || isOwnProject) ? (
-          <TouchableOpacity
-            style={styles.heroImageWrap}
-            onPress={() => router.push(`/project/${id}/active`)}
-            activeOpacity={0.85}
-          >
-            {project.image_url ? (
-              <Image source={{ uri: project.image_url }} style={styles.heroImage} />
-            ) : (
-              <View style={[styles.heroImage, { backgroundColor: YarnyColors.border }]} />
-            )}
-            <View style={styles.heroOverlay}>
-              <Text style={styles.heroOverlayText}>Open tracker</Text>
-              <IconSymbol name="chevron.right" size={20} color={YarnyColors.textSecondary} />
-            </View>
-          </TouchableOpacity>
+          <BrutalShadow style={styles.heroShadow}>
+            <TouchableOpacity
+              style={styles.heroImageWrap}
+              onPress={() => router.push(`/project/${id}/active`)}
+              activeOpacity={0.85}
+            >
+              {project.image_url ? (
+                <Image source={{ uri: project.image_url }} style={styles.heroImage} />
+              ) : (
+                <View style={[styles.heroImage, { backgroundColor: BrutalColors.yellow }]} />
+              )}
+              <View style={styles.heroOverlay}>
+                <Text style={styles.heroOverlayText}>OPEN TRACKER</Text>
+                <IconSymbol name="chevron.right" size={20} color={BrutalColors.textPrimary} />
+              </View>
+            </TouchableOpacity>
+          </BrutalShadow>
         ) : (
-          <View style={styles.heroImageWrap}>
-            {project.image_url ? (
-              <Image source={{ uri: project.image_url }} style={styles.heroImage} />
-            ) : (
-              <View style={[styles.heroImage, { backgroundColor: YarnyColors.border }]} />
-            )}
-          </View>
+          <BrutalShadow style={styles.heroShadow}>
+            <View style={styles.heroImageWrap}>
+              {project.image_url ? (
+                <Image source={{ uri: project.image_url }} style={styles.heroImage} />
+              ) : (
+                <View style={[styles.heroImage, { backgroundColor: BrutalColors.yellow }]} />
+              )}
+            </View>
+          </BrutalShadow>
         )}
 
         {/* Overview */}
@@ -463,17 +468,23 @@ export default function ProjectDetailScreen() {
         <View style={styles.overviewCard}>
           <View style={styles.overviewInfo}>
             <View style={styles.overviewRow}>
-              <CircularProgress percent={overallPercent} size={44} />
+              <CircularProgress
+                percent={overallPercent}
+                size={44}
+                trackColor={BrutalColors.outline}
+                fillColor={BrutalColors.yellow}
+                labelColor={BrutalColors.textPrimary}
+              />
               <Text style={styles.overviewText}>complete</Text>
             </View>
             <View style={styles.overviewRow}>
-              <IconSymbol name="house.fill" size={18} color={YarnyColors.textPrimary} />
+              <IconSymbol name="house.fill" size={18} color={BrutalColors.outline} />
               <Text style={styles.overviewText}>
                 last worked {formatLastWorked(project.last_worked_at)}
               </Text>
             </View>
             <View style={styles.overviewRow}>
-              <IconSymbol name="person.fill" size={18} color={YarnyColors.textPrimary} />
+              <IconSymbol name="person.fill" size={18} color={BrutalColors.outline} />
               <Text style={styles.overviewText}>
                 {project.is_public ? 'public project' : 'private project'}
               </Text>
@@ -504,58 +515,73 @@ export default function ProjectDetailScreen() {
 
         {/* Library / delete / publish / PDF buttons */}
         {!isOwnProject && !inLibrary && (
-          <TouchableOpacity
-            style={[styles.addButton, busy && styles.addButtonDisabled]}
-            onPress={handleAddToLibrary}
-            disabled={busy}
-            activeOpacity={0.8}
-          >
-            {busy ? (
-              <ActivityIndicator color={YarnyColors.textSecondary} />
-            ) : (
-              <View style={styles.addButtonContent}>
-                <IconSymbol name="plus" size={18} color={YarnyColors.textSecondary} />
-                <Text style={styles.addButtonText}>Add to library</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <BrutalShadow style={styles.addButtonShadow}>
+            <TouchableOpacity
+              style={[styles.addButton, busy && styles.addButtonDisabled]}
+              onPress={handleAddToLibrary}
+              disabled={busy}
+              activeOpacity={0.85}
+            >
+              {busy ? (
+                <ActivityIndicator color={BrutalColors.outline} />
+              ) : (
+                <View style={styles.addButtonContent}>
+                  <IconSymbol name="plus" size={18} color={BrutalColors.textPrimary} />
+                  <Text style={styles.addButtonText}>ADD TO LIBRARY</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </BrutalShadow>
         )}
 
         {!isOwnProject && inLibrary && (
-          <View style={[styles.addButton, styles.addedButton]}>
-            <View style={styles.addButtonContent}>
-              <IconSymbol name="checkmark" size={18} color={YarnyColors.textSecondary} />
-              <Text style={styles.addButtonText}>Added to your library</Text>
+          <BrutalShadow style={styles.addButtonShadow}>
+            <View style={[styles.addButton, styles.addedButton]}>
+              <View style={styles.addButtonContent}>
+                <IconSymbol name="checkmark" size={18} color={BrutalColors.textPrimary} />
+                <Text style={styles.addButtonText}>ADDED TO YOUR LIBRARY</Text>
+              </View>
             </View>
-          </View>
+          </BrutalShadow>
         )}
 
         {isOwnProject && !project.is_public && (
-          <TouchableOpacity
-            style={[styles.addButton, busy && styles.addButtonDisabled]}
-            onPress={handlePublish}
-            disabled={busy}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.addButtonText}>Make public</Text>
-          </TouchableOpacity>
+          <BrutalShadow style={styles.addButtonShadow}>
+            <TouchableOpacity
+              style={[styles.addButton, busy && styles.addButtonDisabled]}
+              onPress={handlePublish}
+              disabled={busy}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.addButtonText}>MAKE PUBLIC</Text>
+            </TouchableOpacity>
+          </BrutalShadow>
         )}
 
         {project.pdf_url && (
-          <TouchableOpacity
-            style={styles.viewPdfButton}
-            onPress={() => router.push(`/project/${id}/pdf`)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewPdfButtonText}>View pattern PDF</Text>
-          </TouchableOpacity>
+          <BrutalShadow style={styles.viewPdfShadow}>
+            <TouchableOpacity
+              style={styles.viewPdfButton}
+              onPress={() => router.push(`/project/${id}/pdf`)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.viewPdfButtonText}>VIEW PATTERN PDF</Text>
+            </TouchableOpacity>
+          </BrutalShadow>
         )}
 
         {/* Sections */}
         <Text style={styles.sectionHeader}>Sections</Text>
         {sectionProgress.map((section) => (
           <View key={section.id} style={styles.sectionRow}>
-            <CircularProgress percent={section.percent} size={40} strokeWidth={3} />
+            <CircularProgress
+              percent={section.percent}
+              size={40}
+              strokeWidth={3}
+              trackColor={BrutalColors.outline}
+              fillColor={BrutalColors.yellow}
+              labelColor={BrutalColors.textPrimary}
+            />
             <Text style={styles.sectionTitle}>{section.title}</Text>
           </View>
         ))}
@@ -566,7 +592,7 @@ export default function ProjectDetailScreen() {
           <TextInput
             style={styles.commentInput}
             placeholder="Share your wisdom..."
-            placeholderTextColor={YarnyColors.border}
+            placeholderTextColor="#8A8A8A"
             value={newComment}
             onChangeText={setNewComment}
             multiline
@@ -577,9 +603,9 @@ export default function ProjectDetailScreen() {
             disabled={!newComment.trim() || postingComment}
           >
             {postingComment ? (
-              <ActivityIndicator size="small" color={YarnyColors.textSecondary} />
+              <ActivityIndicator size="small" color={BrutalColors.outline} />
             ) : (
-              <Text style={styles.commentPostText}>Post</Text>
+              <Text style={styles.commentPostText}>POST</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -617,13 +643,15 @@ export default function ProjectDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     paddingHorizontal: 16,
   },
   backButton: {
@@ -631,9 +659,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.5,
   },
   menuButton: {
     marginLeft: 12,
@@ -649,49 +678,53 @@ const styles = StyleSheet.create({
   },
   menu: {
     position: 'absolute',
-    top: 72,
+    top: 78,
     right: 12,
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     paddingVertical: 4,
-    minWidth: 220,
+    minWidth: 240,
     zIndex: 11,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
   },
   menuItem: {
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
   menuItemText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.3,
   },
   menuDivider: {
-    height: 1,
-    backgroundColor: YarnyColors.border,
-    marginHorizontal: 8,
+    height: 2,
+    backgroundColor: BrutalColors.outline,
+    marginHorizontal: 0,
   },
   content: {
     padding: 16,
   },
+  addButtonShadow: {
+    marginTop: 4,
+    marginBottom: 16,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   addButton: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 24,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 16,
   },
   addButtonDisabled: {
     opacity: 0.6,
   },
   addedButton: {
-    opacity: 0.55,
+    backgroundColor: BrutalColors.lime,
+    opacity: 0.85,
   },
   addButtonContent: {
     flexDirection: 'row',
@@ -699,57 +732,70 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   addButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   removeButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
-    borderRadius: 24,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    backgroundColor: BrutalColors.red,
+    borderRadius: BrutalTokens.radius,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 20,
     marginBottom: 16,
   },
-  viewPdfButton: {
-    borderWidth: 2,
-    borderColor: YarnyColors.button,
-    borderRadius: 24,
-    paddingVertical: 12,
-    alignItems: 'center',
+  viewPdfShadow: {
     marginBottom: 16,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
+  viewPdfButton: {
+    backgroundColor: BrutalColors.cyan,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    borderRadius: BrutalTokens.radius,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
   viewPdfButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.button,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   removeButtonText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.button,
+    color: BrutalColors.textPrimary,
   },
   sectionHeader: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     marginBottom: 8,
-    marginTop: 8,
-    borderBottomWidth: 2,
-    borderBottomColor: YarnyColors.button,
+    marginTop: 16,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
     paddingBottom: 4,
+    letterSpacing: 0.5,
   },
   overviewCard: {
     marginBottom: 8,
   },
+  heroShadow: {
+    marginBottom: 20,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   heroImageWrap: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 16,
+    borderRadius: BrutalTokens.radius,
     overflow: 'hidden',
-    backgroundColor: YarnyColors.border,
-    marginBottom: 16,
+    backgroundColor: BrutalColors.yellow,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
   },
   heroImage: {
     width: '100%',
@@ -760,9 +806,11 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     bottom: 12,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 999,
-    paddingVertical: 10,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -770,23 +818,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heroOverlayText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   overviewInfo: {
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
   },
   overviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   overviewText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   creatorRow: {
     flexDirection: 'row',
@@ -799,26 +848,28 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     marginRight: 10,
+    borderWidth: 2,
+    borderColor: BrutalColors.outline,
   },
   creatorAvatarFallback: {
-    backgroundColor: YarnyColors.border,
+    backgroundColor: BrutalColors.pink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   creatorAvatarText: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: 16,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   creatorLabel: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   creatorLink: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.button,
+    color: BrutalColors.textPrimary,
     textDecorationLine: 'underline',
   },
   tagRow: {
@@ -829,93 +880,103 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tag: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 16,
+    backgroundColor: BrutalColors.lime,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: BrutalColors.outline,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
   tagText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.3,
   },
   sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: YarnyColors.border,
+    borderBottomWidth: 2,
+    borderBottomColor: BrutalColors.outline,
   },
   sectionTitle: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   commentInputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 8,
     marginBottom: 12,
+    marginTop: 8,
   },
   commentInput: {
     flex: 1,
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     maxHeight: 100,
   },
   commentPost: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   commentPostText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   commentCard: {
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     padding: 12,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   commentMeta: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.border,
+    color: '#8A8A8A',
     marginBottom: 2,
     fontStyle: 'italic',
   },
   commentAuthor: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   commentBody: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginTop: 2,
   },
   emptyComments: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginVertical: 12,
     fontStyle: 'italic',
   },
   errorText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginTop: 40,
   },

@@ -23,7 +23,8 @@ import {
 import { useUser } from '@/hooks/use-user';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ToggleSwitch } from '@/components/toggle-switch';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 
 type SearchMode = 'projects' | 'users';
 type ProjectFilter = 'all' | 'following';
@@ -164,18 +165,18 @@ export default function FeedScreen() {
             <TouchableOpacity onPress={exitSelection} disabled={adding}>
               <Text style={styles.headerAction}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{selectedIds.size} selected</Text>
+            <Text style={styles.headerTitle}>{selectedIds.size} SELECTED</Text>
             <TouchableOpacity onPress={addSelectedToLibrary} disabled={adding}>
-              <Text style={styles.headerAction}>{adding ? '...' : 'Add'}</Text>
+              <Text style={styles.headerAction}>{adding ? '...' : 'ADD'}</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <Text style={styles.headerTitle}>Feed</Text>
+          <Text style={styles.headerTitle}>FEED</Text>
         )}
       </View>
 
       <View style={styles.searchBar}>
-        <IconSymbol name="magnifyingglass" size={18} color={YarnyColors.border} />
+        <IconSymbol name="magnifyingglass" size={18} color={BrutalColors.outline} />
         <TextInput
           style={styles.searchInput}
           value={query}
@@ -183,7 +184,7 @@ export default function FeedScreen() {
           placeholder={
             searchMode === 'users' ? 'Search users...' : 'Search patterns or users...'
           }
-          placeholderTextColor={YarnyColors.card}
+          placeholderTextColor="#8A8A8A"
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
@@ -213,7 +214,7 @@ export default function FeedScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       ) : searchMode === 'users' ? (
         <FlatList
           data={users}
@@ -226,33 +227,35 @@ export default function FeedScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.userCard}
-              onPress={() => router.push(`/user/${item.id}`)}
-              activeOpacity={0.8}
-            >
-              {item.profile_photo_url ? (
-                <Image source={{ uri: item.profile_photo_url }} style={styles.userAvatar} />
-              ) : (
-                <View style={[styles.userAvatar, styles.userAvatarFallback]}>
-                  <Text style={styles.userAvatarText}>
-                    {item.username.charAt(0).toUpperCase()}
+            <BrutalShadow style={styles.shadowWrap}>
+              <TouchableOpacity
+                style={styles.userCard}
+                onPress={() => router.push(`/user/${item.id}`)}
+                activeOpacity={0.85}
+              >
+                {item.profile_photo_url ? (
+                  <Image source={{ uri: item.profile_photo_url }} style={styles.userAvatar} />
+                ) : (
+                  <View style={[styles.userAvatar, styles.userAvatarFallback]}>
+                    <Text style={styles.userAvatarText}>
+                      {item.username.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>{item.username}</Text>
+                  <Text style={styles.userMeta}>
+                    {item.follower_count ?? 0}{' '}
+                    {item.follower_count === 1 ? 'follower' : 'followers'}
                   </Text>
                 </View>
-              )}
-              <View style={styles.userInfo}>
-                <Text style={styles.userName}>{item.username}</Text>
-                <Text style={styles.userMeta}>
-                  {item.follower_count ?? 0}{' '}
-                  {item.follower_count === 1 ? 'follower' : 'followers'}
-                </Text>
-              </View>
-              {item.is_following && (
-                <View style={styles.followingBadge}>
-                  <Text style={styles.followingBadgeText}>Following</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+                {item.is_following && (
+                  <View style={styles.followingBadge}>
+                    <Text style={styles.followingBadgeText}>Following</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </BrutalShadow>
           )}
         />
       ) : (
@@ -278,72 +281,74 @@ export default function FeedScreen() {
           renderItem={({ item }) => {
             const isSelected = selectedIds.has(item.id);
             return (
-              <TouchableOpacity
-                style={[styles.card, isSelected && styles.cardSelected]}
-                onPress={() => {
-                  if (selectionMode) toggleSelect(item.id);
-                  else router.push(`/project/${item.id}/details?from=search`);
-                }}
-                onLongPress={() => handleLongPress(item.id)}
-                delayLongPress={350}
-                activeOpacity={0.8}
-              >
-                {selectionMode && (
-                  <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                    {isSelected && (
-                      <IconSymbol name="checkmark" size={16} color={YarnyColors.textSecondary} />
-                    )}
-                  </View>
-                )}
-                {item.image_url ? (
-                  <Image source={{ uri: item.image_url }} style={styles.cardImage} />
-                ) : (
-                  <View style={[styles.cardImage, { backgroundColor: YarnyColors.border }]} />
-                )}
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
-                  <View style={styles.cardAuthorRow}>
-                    {item.profile_photo_url ? (
-                      <Image
-                        source={{ uri: item.profile_photo_url }}
-                        style={styles.cardAuthorAvatar}
-                      />
-                    ) : (
-                      <View style={[styles.cardAuthorAvatar, styles.cardAuthorAvatarFallback]}>
-                        <Text style={styles.cardAuthorAvatarText}>
-                          {item.username.charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                    )}
-                    <Text style={styles.cardAuthor}>by @{item.username}</Text>
-                  </View>
-                  <View style={styles.cardMetaRow}>
-                    <IconSymbol name="plus.circle.fill" size={14} color={YarnyColors.textSecondary} />
-                    <Text style={styles.cardMeta}>
-                      {item.adds_count ?? 0} {item.adds_count === 1 ? 'add' : 'adds'}
-                    </Text>
-                  </View>
-                  {(item.project_type || item.yarn_weight !== null || item.hook_size !== null) && (
-                    <View style={styles.cardTagRow}>
-                      {item.project_type && (
-                        <View style={styles.cardTag}>
-                          <Text style={styles.cardTagText}>{item.project_type}</Text>
-                        </View>
-                      )}
-                      {item.yarn_weight !== null && (
-                        <View style={styles.cardTag}>
-                          <Text style={styles.cardTagText}>Weight {item.yarn_weight}</Text>
-                        </View>
-                      )}
-                      {item.hook_size !== null && (
-                        <View style={styles.cardTag}>
-                          <Text style={styles.cardTagText}>{item.hook_size}mm</Text>
-                        </View>
+              <BrutalShadow style={styles.shadowWrap}>
+                <TouchableOpacity
+                  style={[styles.card, isSelected && styles.cardSelected]}
+                  onPress={() => {
+                    if (selectionMode) toggleSelect(item.id);
+                    else router.push(`/project/${item.id}/details?from=search`);
+                  }}
+                  onLongPress={() => handleLongPress(item.id)}
+                  delayLongPress={350}
+                  activeOpacity={0.85}
+                >
+                  {selectionMode && (
+                    <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                      {isSelected && (
+                        <IconSymbol name="checkmark" size={16} color={BrutalColors.outline} />
                       )}
                     </View>
                   )}
-                </View>
-              </TouchableOpacity>
+                  {item.image_url ? (
+                    <Image source={{ uri: item.image_url }} style={styles.cardImage} />
+                  ) : (
+                    <View style={[styles.cardImage, { backgroundColor: BrutalColors.yellow }]} />
+                  )}
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+                    <View style={styles.cardAuthorRow}>
+                      {item.profile_photo_url ? (
+                        <Image
+                          source={{ uri: item.profile_photo_url }}
+                          style={styles.cardAuthorAvatar}
+                        />
+                      ) : (
+                        <View style={[styles.cardAuthorAvatar, styles.cardAuthorAvatarFallback]}>
+                          <Text style={styles.cardAuthorAvatarText}>
+                            {item.username.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <Text style={styles.cardAuthor}>by @{item.username}</Text>
+                    </View>
+                    <View style={styles.cardMetaRow}>
+                      <IconSymbol name="plus.circle.fill" size={14} color={BrutalColors.outline} />
+                      <Text style={styles.cardMeta}>
+                        {item.adds_count ?? 0} {item.adds_count === 1 ? 'add' : 'adds'}
+                      </Text>
+                    </View>
+                    {(item.project_type || item.yarn_weight !== null || item.hook_size !== null) && (
+                      <View style={styles.cardTagRow}>
+                        {item.project_type && (
+                          <View style={styles.cardTag}>
+                            <Text style={styles.cardTagText}>{item.project_type}</Text>
+                          </View>
+                        )}
+                        {item.yarn_weight !== null && (
+                          <View style={styles.cardTag}>
+                            <Text style={styles.cardTagText}>Weight {item.yarn_weight}</Text>
+                          </View>
+                        )}
+                        {item.hook_size !== null && (
+                          <View style={styles.cardTag}>
+                            <Text style={styles.cardTagText}>{item.hook_size}mm</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </BrutalShadow>
             );
           }}
         />
@@ -355,19 +360,22 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.5,
   },
   selectionHeader: {
     flexDirection: 'row',
@@ -376,80 +384,91 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerAction: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: YarnyColors.border,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 16,
     paddingRight: 12,
     paddingLeft: 12,
     gap: 8,
   },
   searchInput: {
     flex: 1,
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     paddingVertical: 10,
     paddingHorizontal: 6,
   },
   clearText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.caption,
-    color: YarnyColors.button,
+    color: BrutalColors.outline,
   },
   toggles: {
     paddingHorizontal: 16,
+    marginTop: 12,
   },
   list: {
     padding: 16,
   },
+  shadowWrap: {
+    marginBottom: 16,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   card: {
     flexDirection: 'row',
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     padding: 12,
-    marginBottom: 12,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   cardSelected: {
-    borderColor: YarnyColors.button,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.pink,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: YarnyColors.textSecondary,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
+    backgroundColor: BrutalColors.surface,
     marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxSelected: {
-    backgroundColor: YarnyColors.button,
-    borderColor: YarnyColors.button,
+    backgroundColor: BrutalColors.pink,
   },
   cardImage: {
     width: 60,
     height: 60,
-    borderRadius: 8,
+    borderRadius: 6,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
   },
   cardInfo: {
     flex: 1,
     marginLeft: 12,
   },
   cardTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.3,
   },
   cardAuthorRow: {
     flexDirection: 'row',
@@ -461,21 +480,23 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: BrutalColors.outline,
   },
   cardAuthorAvatarFallback: {
-    backgroundColor: YarnyColors.border,
+    backgroundColor: BrutalColors.cyan,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardAuthorAvatarText: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: 10,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   cardAuthor: {
-    fontFamily: YarnyFonts.body,
-    fontSize: 14,
-    color: YarnyColors.textSecondary,
+    fontFamily: BrutalFonts.semibold,
+    fontSize: 13,
+    color: BrutalColors.textPrimary,
   },
   cardMetaRow: {
     flexDirection: 'row',
@@ -484,9 +505,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cardMeta: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: 12,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   cardTagRow: {
     flexDirection: 'row',
@@ -495,70 +516,77 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   cardTag: {
-    backgroundColor: YarnyColors.button,
-    borderRadius: 10,
+    backgroundColor: BrutalColors.lime,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: BrutalColors.outline,
     paddingVertical: 3,
     paddingHorizontal: 8,
   },
   cardTagText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.black,
     fontSize: 11,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 0.3,
   },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     padding: 12,
-    marginBottom: 12,
   },
   userAvatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
   },
   userAvatarFallback: {
-    backgroundColor: YarnyColors.border,
+    backgroundColor: BrutalColors.pink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   userAvatarText: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: 22,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   userInfo: {
     flex: 1,
     marginLeft: 12,
   },
   userName: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   userMeta: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: 13,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginTop: 2,
   },
   followingBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: YarnyColors.textSecondary,
+    borderRadius: 6,
+    borderWidth: 2,
+    backgroundColor: BrutalColors.lime,
+    borderColor: BrutalColors.outline,
   },
   followingBadgeText: {
-    fontFamily: YarnyFonts.bodySemiBold,
+    fontFamily: BrutalFonts.black,
     fontSize: 12,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
   },
   emptyText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginTop: 40,
   },

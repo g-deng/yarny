@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
 
 interface ToggleSwitchProps {
   value: boolean;
@@ -43,27 +43,31 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   label: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.border,
+    color: '#8A8A8A',
   },
   activeLabel: {
-    color: YarnyColors.textPrimary,
-    fontFamily: YarnyFonts.bodySemiBold,
+    color: BrutalColors.textPrimary,
+    fontFamily: BrutalFonts.black,
   },
   track: {
-    width: 50,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: YarnyColors.border,
+    width: 54,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: BrutalColors.surface,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 2,
   },
   thumb: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: YarnyColors.button,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: BrutalColors.pink,
+    borderWidth: 2,
+    borderColor: BrutalColors.outline,
   },
   thumbRight: {
     alignSelf: 'flex-end',

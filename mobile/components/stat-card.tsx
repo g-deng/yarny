@@ -1,42 +1,59 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import {
+  BrutalColors,
+  BrutalFonts,
+  BrutalTokens,
+  YarnySizes,
+} from '@/constants/theme';
+import { BrutalShadow } from './brutal/brutal-shadow';
 
 interface StatCardProps {
   title: string;
   stats: { label: string; value: string | number }[];
+  color?: string;
 }
 
-export function StatCard({ title, stats }: StatCardProps) {
+export function StatCard({ title, stats, color = BrutalColors.yellow }: StatCardProps) {
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{title}</Text>
-      {stats.map((stat, i) => (
-        <Text key={i} style={styles.stat}>
-          {stat.value} {stat.label}
-        </Text>
-      ))}
-    </View>
+    <BrutalShadow style={styles.shadow}>
+      <View style={[styles.card, { backgroundColor: color }]}>
+        <Text style={styles.title}>{title.toUpperCase()}</Text>
+        {stats.map((stat, i) => (
+          <Text key={i} style={styles.stat}>
+            <Text style={styles.statValue}>{stat.value}</Text> {stat.label}
+          </Text>
+        ))}
+      </View>
+    </BrutalShadow>
   );
 }
 
 const styles = StyleSheet.create({
+  shadow: {
+    marginBottom: 16,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   card: {
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidthThick,
+    borderColor: BrutalColors.outline,
     padding: 16,
-    marginBottom: 12,
   },
   title: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginBottom: 8,
+    letterSpacing: 1,
   },
   stat: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
-    lineHeight: 26,
+    color: BrutalColors.textPrimary,
+    lineHeight: 28,
+  },
+  statValue: {
+    fontFamily: BrutalFonts.black,
   },
 });

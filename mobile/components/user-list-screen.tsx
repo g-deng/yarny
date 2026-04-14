@@ -11,7 +11,13 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { YarnyColors, YarnyFonts, YarnySizes } from '@/constants/theme';
+import {
+  BrutalColors,
+  BrutalFonts,
+  BrutalTokens,
+  YarnySizes,
+} from '@/constants/theme';
+import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 import type { User } from '@/services/api';
 
 interface Props {
@@ -43,16 +49,16 @@ export function UserListScreen({ title, fetcher }: Props) {
           <IconSymbol
             name="chevron.right"
             size={22}
-            color={YarnyColors.textSecondary}
+            color={BrutalColors.outline}
             style={{ transform: [{ rotate: '180deg' }] }}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
+        <Text style={styles.headerTitle}>{title.toUpperCase()}</Text>
         <View style={styles.backButton} />
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color={YarnyColors.button} style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       ) : (
         <FlatList
           data={users}
@@ -60,22 +66,24 @@ export function UserListScreen({ title, fetcher }: Props) {
           contentContainerStyle={styles.list}
           ListEmptyComponent={<Text style={styles.emptyText}>No users yet</Text>}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => router.push(`/user/${item.id}`)}
-              activeOpacity={0.8}
-            >
-              {item.profile_photo_url ? (
-                <Image source={{ uri: item.profile_photo_url }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarFallback]}>
-                  <Text style={styles.avatarText}>
-                    {item.username.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-              <Text style={styles.username}>{item.username}</Text>
-            </TouchableOpacity>
+            <BrutalShadow style={styles.rowShadow}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => router.push(`/user/${item.id}`)}
+                activeOpacity={0.85}
+              >
+                {item.profile_photo_url ? (
+                  <Image source={{ uri: item.profile_photo_url }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarFallback]}>
+                    <Text style={styles.avatarText}>
+                      {item.username.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <Text style={styles.username}>{item.username}</Text>
+              </TouchableOpacity>
+            </BrutalShadow>
           )}
         />
       )}
@@ -86,11 +94,13 @@ export function UserListScreen({ title, fetcher }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: YarnyColors.background,
+    backgroundColor: BrutalColors.background,
   },
   header: {
-    backgroundColor: YarnyColors.button,
-    paddingVertical: 12,
+    backgroundColor: BrutalColors.yellow,
+    borderBottomWidth: BrutalTokens.borderWidthThick,
+    borderBottomColor: BrutalColors.outline,
+    paddingVertical: 14,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -101,46 +111,54 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.subtitle,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
+    letterSpacing: 1.5,
   },
   list: {
     padding: 16,
   },
+  rowShadow: {
+    marginBottom: 14,
+    marginRight: BrutalTokens.shadowOffset.x,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: YarnyColors.card,
-    borderRadius: 12,
+    backgroundColor: BrutalColors.surface,
+    borderRadius: BrutalTokens.radius,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
     padding: 12,
-    marginBottom: 10,
   },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
+    borderWidth: BrutalTokens.borderWidth,
+    borderColor: BrutalColors.outline,
   },
   avatarFallback: {
-    backgroundColor: YarnyColors.border,
+    backgroundColor: BrutalColors.pink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: 22,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
   },
   username: {
-    fontFamily: YarnyFonts.header,
+    fontFamily: BrutalFonts.black,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textSecondary,
+    color: BrutalColors.textPrimary,
     marginLeft: 12,
   },
   emptyText: {
-    fontFamily: YarnyFonts.body,
+    fontFamily: BrutalFonts.semibold,
     fontSize: YarnySizes.body,
-    color: YarnyColors.textPrimary,
+    color: BrutalColors.textPrimary,
     textAlign: 'center',
     marginTop: 40,
     fontStyle: 'italic',
