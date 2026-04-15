@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -47,6 +49,18 @@ export default function FeedScreen() {
   const [query, setQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
+
+  const listOpacity = useRef(new Animated.Value(1)).current;
+  const fadeTo = useCallback(
+    (to: number) =>
+      Animated.timing(listOpacity, {
+        toValue: to,
+        duration: 150,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(),
+    [listOpacity]
+  );
 
   const selectionMode = selectedIds.size > 0;
   const exitSelection = useCallback(() => setSelectedIds(new Set()), []);
@@ -105,8 +119,9 @@ export default function FeedScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      fadeTo(1);
     }
-  }, [userId, projectFilter]);
+  }, [userId, projectFilter, fadeTo]);
 
   // Debounced user search
   useEffect(() => {
@@ -114,6 +129,7 @@ export default function FeedScreen() {
     if (!query.trim()) {
       setUsers([]);
       setLoading(false);
+      fadeTo(1);
       return;
     }
     setLoading(true);
@@ -125,10 +141,11 @@ export default function FeedScreen() {
         console.error('Failed to search users:', err);
       } finally {
         setLoading(false);
+        fadeTo(1);
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [searchMode, query, userId]);
+  }, [searchMode, query, userId, fadeTo]);
 
   useFocusEffect(
     useCallback(() => {
@@ -158,7 +175,7 @@ export default function FeedScreen() {
   }, [projects, query]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         {selectionMode ? (
           <View style={styles.selectionHeader}>
@@ -199,20 +216,27 @@ export default function FeedScreen() {
       <View style={styles.toggles}>
         <ToggleSwitch
           value={modeIsUsers}
-          onToggle={setModeIsUsers}
+          onToggle={(v) => {
+            fadeTo(0);
+            setModeIsUsers(v);
+          }}
           leftLabel="Projects"
           rightLabel="Users"
         />
         {searchMode === 'projects' && (
           <ToggleSwitch
             value={filterIsFollowing}
-            onToggle={setFilterIsFollowing}
+            onToggle={(v) => {
+              fadeTo(0);
+              setFilterIsFollowing(v);
+            }}
             leftLabel="All"
             rightLabel="Following"
           />
         )}
       </View>
 
+      <Animated.View style={{ flex: 1, opacity: listOpacity }}>
       {loading ? (
         <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       ) : searchMode === 'users' ? (
@@ -353,6 +377,7 @@ export default function FeedScreen() {
           }}
         />
       )}
+      </Animated.View>
     </SafeAreaView>
   );
 }

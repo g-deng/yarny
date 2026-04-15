@@ -90,7 +90,7 @@ export default function CreateScreen() {
       }
 
       setStatus('Done!');
-      router.replace(`/project/${project.id}/active`);
+      router.replace(`/project/${project.id}/details`);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to create project');
     } finally {
@@ -100,7 +100,7 @@ export default function CreateScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>NEW PROJECT</Text>
       </View>

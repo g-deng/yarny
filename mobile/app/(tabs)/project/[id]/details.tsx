@@ -303,7 +303,7 @@ export default function ProjectDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <ActivityIndicator size="large" color={BrutalColors.outline} style={{ flex: 1 }} />
       </SafeAreaView>
     );
@@ -311,7 +311,7 @@ export default function ProjectDetailScreen() {
 
   if (!project) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <Text style={styles.errorText}>Project not found</Text>
       </SafeAreaView>
     );
@@ -329,7 +329,7 @@ export default function ProjectDetailScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => {
@@ -411,7 +411,12 @@ export default function ProjectDetailScreen() {
         </>
       )}
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
         {/* Hero image — entrance to the tracker */}
         {(inLibrary || isOwnProject) ? (
           <BrutalShadow style={styles.heroShadow}>

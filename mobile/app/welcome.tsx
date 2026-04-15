@@ -82,7 +82,7 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.inner}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <Text style={styles.title}>Welcome to Yarny</Text>
         <Text style={styles.subtitle}>
