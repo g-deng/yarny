@@ -60,8 +60,9 @@ router.get('/', async (req, res) => {
                 (SELECT COUNT(DISTINCT user_id)::int FROM progress WHERE project_id = p.id) AS adds_count
          FROM projects p
          JOIN users u ON p.user_id = u.id
-         JOIN follows f ON f.following_id = p.user_id
-         WHERE p.is_public = true AND f.follower_id = $1
+         WHERE p.is_public = true
+           AND (p.user_id = $1
+                OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1))
          ORDER BY ${orderBy}`,
         [viewerId]
       );

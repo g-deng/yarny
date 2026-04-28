@@ -35,12 +35,14 @@ router.get('/by-username/:username', async (req, res) => {
 
 // GET /api/users/search?q=...&viewer_id=... — username prefix search.
 // Must be defined BEFORE /:userId so Express doesn't route "search" as an id.
+// Empty q returns the top users (by follower_count) so the Users feed has
+// something to browse before the viewer types anything.
 // Returns users with follower_count and is_following (for the viewer), sorted by follower_count desc.
 router.get('/search', async (req, res) => {
   try {
     const { q, viewer_id } = req.query;
     const query = (q || '').toString().trim();
-    if (!query) return res.json([]);
+    const hasQuery = query.length > 0;
 
     const result = await pool.query(
       `SELECT u.*,
@@ -51,10 +53,10 @@ router.get('/search', async (req, res) => {
                 WHERE follower_id = $2 AND following_id = u.id
               ) AS is_following
        FROM users u
-       WHERE u.username ILIKE $1
+       WHERE ($1::text IS NULL OR u.username ILIKE $1)
        ORDER BY follower_count DESC, u.username ASC
        LIMIT 50`,
-      [`${query}%`, viewer_id || null]
+      [hasQuery ? `${query}%` : null, viewer_id || null]
     );
     res.json(result.rows);
   } catch (err) {

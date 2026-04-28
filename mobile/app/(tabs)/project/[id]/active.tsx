@@ -568,6 +568,16 @@ export default function ActiveCrochetingScreen() {
                   <Text style={styles.instructionLabel}>Row {currentRow.row_number}:</Text>{' '}
                   {currentRow.instruction}
                 </Text>
+                {!commentsExpanded && rowComments.length > 0 && (
+                  <View style={styles.commentsHint}>
+                    <IconSymbol
+                      name="bubble.left"
+                      size={14}
+                      color={BrutalColors.outline}
+                    />
+                    <Text style={styles.commentsHintText}>swipe up to view comments</Text>
+                  </View>
+                )}
               </>
             ) : (
               <Text style={styles.instruction}>Upload a pattern to get started</Text>
@@ -646,50 +656,47 @@ export default function ActiveCrochetingScreen() {
               )}
             </Reanimated.View>
           )}
-        </ScrollView>
 
-        {/* Fixed bottom navigation */}
-        {!commentsExpanded && (
-        <View style={styles.footerNav}>
-          {isComplete ? (
-            <TouchableOpacity
-              style={[styles.nextButton, advancing && styles.buttonDisabled]}
-              onPress={handleRestart}
-              disabled={advancing}
-              activeOpacity={0.8}
-            >
-              {advancing ? (
-                <ActivityIndicator color={BrutalColors.outline} />
-              ) : (
-                <Text style={styles.nextButtonText}>Restart project</Text>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.rowButtons}>
+          <View style={styles.footerNav}>
+            {isComplete ? (
               <TouchableOpacity
-                style={[styles.prevButton, (rowsCompleted === 0 || advancing) && styles.buttonDisabled]}
-                onPress={handlePreviousRow}
-                disabled={rowsCompleted === 0 || advancing || !currentRow}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.prevButtonText}>Previous</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.nextButton, { flex: 1, marginBottom: 0 }, !currentRow && styles.buttonDisabled]}
-                onPress={handleNextRow}
-                disabled={!currentRow || advancing}
+                style={[styles.nextButton, advancing && styles.buttonDisabled]}
+                onPress={handleRestart}
+                disabled={advancing}
                 activeOpacity={0.8}
               >
                 {advancing ? (
                   <ActivityIndicator color={BrutalColors.outline} />
                 ) : (
-                  <Text style={styles.nextButtonText}>Next row</Text>
+                  <Text style={styles.nextButtonText}>Restart project</Text>
                 )}
               </TouchableOpacity>
-            </View>
-          )}
-        </View>
-        )}
+            ) : (
+              <View style={styles.rowButtons}>
+                <TouchableOpacity
+                  style={[styles.prevButton, (rowsCompleted === 0 || advancing) && styles.buttonDisabled]}
+                  onPress={handlePreviousRow}
+                  disabled={rowsCompleted === 0 || advancing || !currentRow}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.prevButtonText}>Previous</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.nextButton, { flex: 1, marginBottom: 0 }, !currentRow && styles.buttonDisabled]}
+                  onPress={handleNextRow}
+                  disabled={!currentRow || advancing}
+                  activeOpacity={0.8}
+                >
+                  {advancing ? (
+                    <ActivityIndicator color={BrutalColors.outline} />
+                  ) : (
+                    <Text style={styles.nextButtonText}>Next row</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </ScrollView>
       </Reanimated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -859,8 +866,9 @@ const styles = StyleSheet.create({
     backgroundColor: BrutalColors.outline,
   },
   footerNav: {
-    padding: 20,
     paddingTop: 12,
+    paddingBottom: 8,
+    marginTop: 12,
     borderTopWidth: 2,
     borderTopColor: BrutalColors.outline,
   },
@@ -977,6 +985,18 @@ const styles = StyleSheet.create({
     fontSize: YarnySizes.body,
     color: BrutalColors.textPrimary,
     marginBottom: 16,
+  },
+  commentsHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: -8,
+  },
+  commentsHintText: {
+    fontFamily: BrutalFonts.semibold,
+    fontSize: YarnySizes.caption,
+    color: BrutalColors.outline,
+    fontStyle: 'italic',
   },
   instructionLabel: {
     fontFamily: BrutalFonts.black,

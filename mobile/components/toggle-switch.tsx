@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, type ViewStyle, type StyleProp } from 'react-native';
 import { BrutalColors, BrutalFonts, BrutalTokens, YarnySizes } from '@/constants/theme';
 
 interface ToggleSwitchProps {
@@ -7,6 +7,7 @@ interface ToggleSwitchProps {
   onToggle: (value: boolean) => void;
   leftLabel?: string;
   rightLabel?: string;
+  style?: StyleProp<ViewStyle>;
 }
 
 const TRACK_WIDTH = 54;
@@ -20,6 +21,7 @@ export function ToggleSwitch({
   onToggle,
   leftLabel = 'Private',
   rightLabel = 'Public',
+  style,
 }: ToggleSwitchProps) {
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
@@ -38,7 +40,7 @@ export function ToggleSwitch({
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <TouchableOpacity onPress={() => onToggle(false)} activeOpacity={0.7}>
         <Text style={[styles.label, !value && styles.activeLabel]}>{leftLabel}</Text>
       </TouchableOpacity>

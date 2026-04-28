@@ -14,7 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '@/hooks/use-user';
-import { getUserProjects, deleteProject, type ProjectWithProgress } from '@/services/api';
+import {
+  getUserProjects,
+  deleteProject,
+  removeProjectTracking,
+  type ProjectWithProgress,
+} from '@/services/api';
 import { ProjectCard } from '@/components/project-card';
 import { BrutalShadow } from '@/components/brutal/brutal-shadow';
 import {
@@ -83,34 +88,51 @@ export default function HomeScreen() {
 
   const confirmDelete = useCallback(() => {
     if (!userId || selectedIds.size === 0) return;
-    const count = selectedIds.size;
-    Alert.alert(
-      `Delete ${count} project${count === 1 ? '' : 's'}?`,
-      'This will remove them from your home screen. Projects you own will be deleted permanently.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await Promise.all(
-                Array.from(selectedIds).map((id) => deleteProject(id, userId))
-              );
-              exitSelection();
-              await fetchProjects();
-            } catch (err) {
-              console.error('Failed to delete projects:', err);
-              Alert.alert('Error', 'Failed to delete some projects.');
-            } finally {
-              setDeleting(false);
-            }
-          },
+
+    const selected = projects.filter((p) => selectedIds.has(p.id));
+    const removable = selected.filter((p) => p.user_id !== userId || p.is_public);
+    const ownedPrivate = selected.filter((p) => p.user_id === userId && !p.is_public);
+
+    if (removable.length === 0) {
+      Alert.alert(
+        'Nothing to remove',
+        "Private projects you own can't be removed from your library — open one and tap delete to remove it permanently."
+      );
+      return;
+    }
+
+    const count = removable.length;
+    const message = ownedPrivate.length
+      ? `${count} project${count === 1 ? '' : 's'} will be removed from your library. ${ownedPrivate.length} private project${ownedPrivate.length === 1 ? '' : 's'} you own will be kept (delete those from the project page).`
+      : `${count} project${count === 1 ? '' : 's'} will be removed from your library.`;
+
+    Alert.alert(`Remove ${count} project${count === 1 ? '' : 's'}?`, message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          setDeleting(true);
+          try {
+            await Promise.all(
+              removable.map((p) =>
+                p.user_id === userId
+                  ? deleteProject(p.id, userId)
+                  : removeProjectTracking(userId, p.id)
+              )
+            );
+            exitSelection();
+            await fetchProjects();
+          } catch (err) {
+            console.error('Failed to remove projects:', err);
+            Alert.alert('Error', 'Failed to remove some projects.');
+          } finally {
+            setDeleting(false);
+          }
         },
-      ]
-    );
-  }, [userId, selectedIds, exitSelection, fetchProjects]);
+      },
+    ]);
+  }, [userId, selectedIds, projects, exitSelection, fetchProjects]);
 
   useFocusEffect(
     useCallback(() => {
@@ -138,10 +160,16 @@ export default function HomeScreen() {
               <TouchableOpacity onPress={exitSelection} disabled={deleting}>
                 <Text style={styles.headerAction}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>{selectedIds.size} SELECTED</Text>
+              <Text
+                style={[styles.headerTitle, styles.selectionTitle]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {selectedIds.size} SELECTED
+              </Text>
               <TouchableOpacity onPress={confirmDelete} disabled={deleting}>
                 <Text style={[styles.headerAction, styles.headerActionDanger]}>
-                  {deleting ? '...' : 'DELETE'}
+                  {deleting ? '...' : 'REMOVE'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -304,6 +332,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
+    gap: 8,
+  },
+  selectionTitle: {
+    flex: 1,
+    fontSize: YarnySizes.body,
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   headerAction: {
     fontFamily: BrutalFonts.black,

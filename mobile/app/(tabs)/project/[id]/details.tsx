@@ -548,12 +548,17 @@ export default function ProjectDetailScreen() {
 
         {!isOwnProject && inLibrary && (
           <BrutalShadow style={styles.addButtonShadow}>
-            <View style={[styles.addButton, styles.addedButton]}>
+            <TouchableOpacity
+              style={[styles.addButton, styles.addedButton, busy && styles.addButtonDisabled]}
+              onPress={handleDelete}
+              disabled={busy}
+              activeOpacity={0.85}
+            >
               <View style={styles.addButtonContent}>
                 <IconSymbol name="checkmark" size={18} color={BrutalColors.textPrimary} />
                 <Text style={styles.addButtonText}>ADDED TO YOUR LIBRARY</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           </BrutalShadow>
         )}
 
@@ -736,7 +741,6 @@ const styles = StyleSheet.create({
   },
   addedButton: {
     backgroundColor: BrutalColors.lime,
-    opacity: 0.85,
   },
   addButtonContent: {
     flexDirection: 'row',

@@ -123,15 +123,10 @@ export default function FeedScreen() {
     }
   }, [userId, projectFilter, fadeTo]);
 
-  // Debounced user search
+  // Debounced user search. With an empty query the backend returns the top users
+  // by follower count so the feed is browseable without typing.
   useEffect(() => {
     if (searchMode !== 'users') return;
-    if (!query.trim()) {
-      setUsers([]);
-      setLoading(false);
-      fadeTo(1);
-      return;
-    }
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
@@ -143,7 +138,7 @@ export default function FeedScreen() {
         setLoading(false);
         fadeTo(1);
       }
-    }, 250);
+    }, query.trim() ? 250 : 0);
     return () => clearTimeout(timer);
   }, [searchMode, query, userId, fadeTo]);
 
@@ -222,6 +217,7 @@ export default function FeedScreen() {
           }}
           leftLabel="Projects"
           rightLabel="Users"
+          style={styles.toggleCompact}
         />
         {searchMode === 'projects' && (
           <ToggleSwitch
@@ -232,6 +228,7 @@ export default function FeedScreen() {
             }}
             leftLabel="All"
             rightLabel="Following"
+            style={styles.toggleCompact}
           />
         )}
       </View>
@@ -247,7 +244,7 @@ export default function FeedScreen() {
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <Text style={styles.emptyText}>
-              {query.trim() ? `No users match "${query}"` : 'Start typing to search users'}
+              {query.trim() ? `No users match "${query}"` : 'No users yet'}
             </Text>
           }
           renderItem={({ item }) => (
@@ -271,6 +268,8 @@ export default function FeedScreen() {
                   <Text style={styles.userMeta}>
                     {item.follower_count ?? 0}{' '}
                     {item.follower_count === 1 ? 'follower' : 'followers'}
+                    {' · '}
+                    {item.following_count ?? 0} following
                   </Text>
                 </View>
                 {item.is_following && (
@@ -443,6 +442,9 @@ const styles = StyleSheet.create({
   toggles: {
     paddingHorizontal: 16,
     marginTop: 12,
+  },
+  toggleCompact: {
+    marginVertical: 4,
   },
   list: {
     padding: 16,

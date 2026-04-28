@@ -28,6 +28,7 @@ const MAPPING = {
   'checkmark': 'check',
   'trash': 'delete',
   'ellipsis': 'more-vert',
+  'bubble.left': 'chat-bubble-outline',
 } as IconMapping;
 
 /**
