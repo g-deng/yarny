@@ -8,6 +8,7 @@ import { BrutalColors, BrutalFonts, BrutalTokens } from '@/constants/theme';
 export default function TabLayout() {
   return (
     <Tabs
+      backBehavior="history"
       screenOptions={{
         tabBarActiveTintColor: BrutalColors.outline,
         tabBarInactiveTintColor: '#8A8A8A',
@@ -60,6 +61,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen name="project" options={{ href: null }} />
+      <Tabs.Screen name="user" options={{ href: null }} />
     </Tabs>
   );
 }

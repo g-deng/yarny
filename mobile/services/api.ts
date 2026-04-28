@@ -193,9 +193,10 @@ export function getProjectDetail(id: string, userId: string) {
   return apiFetch<ProjectDetail>(`/api/projects/${id}?user_id=${encodeURIComponent(userId)}`);
 }
 
-export function deleteProject(id: string, userId: string) {
+export function deleteProject(id: string, userId: string, force = false) {
+  const qs = `user_id=${encodeURIComponent(userId)}${force ? '&force=true' : ''}`;
   return apiFetch<{ kept_global: boolean; message: string }>(
-    `/api/projects/${id}?user_id=${encodeURIComponent(userId)}`,
+    `/api/projects/${id}?${qs}`,
     { method: 'DELETE' }
   );
 }

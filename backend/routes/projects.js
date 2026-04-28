@@ -177,14 +177,16 @@ router.patch('/:id/publish', async (req, res) => {
 });
 
 // DELETE /api/projects/:id — delete semantics depend on ownership + visibility:
-//   - non-owner         → 403 (non-owners drop their library entry via /track)
-//   - owner + private   → hard delete (cascades wipe sections/rows/progress/etc.)
-//   - owner + public    → preserve global state; wipe only caller's progress + log
+//   - non-owner              → 403 (non-owners drop their library entry via /track)
+//   - owner + private        → hard delete (cascades wipe sections/rows/progress/etc.)
+//   - owner + public         → preserve global state; wipe only caller's progress + log
+//   - owner + public + force → hard delete, but only if no other user tracks it; 409 otherwise
 router.delete('/:id', async (req, res) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;
-    const { user_id } = req.query;
+    const { user_id, force } = req.query;
+    const wantsHardDelete = force === 'true' || force === '1';
     if (!user_id) {
       client.release();
       return res.status(400).json({ error: 'user_id required' });
@@ -208,7 +210,22 @@ router.delete('/:id', async (req, res) => {
     await client.query('BEGIN');
 
     if (project.is_public) {
-      // Keep the global project; drop this owner's local state only.
+      if (wantsHardDelete) {
+        const others = await client.query(
+          'SELECT 1 FROM progress WHERE project_id = $1 AND user_id <> $2 LIMIT 1',
+          [id, user_id]
+        );
+        if (others.rows.length > 0) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: 'Other users are tracking this project. Unpublish or remove them first.',
+          });
+        }
+        await client.query('DELETE FROM projects WHERE id = $1', [id]);
+        await client.query('COMMIT');
+        return res.json({ kept_global: false, message: 'Project deleted' });
+      }
+      // Default public-owner behavior: keep global, drop owner's local state.
       await client.query(
         'DELETE FROM progress WHERE user_id = $1 AND project_id = $2',
         [user_id, id]

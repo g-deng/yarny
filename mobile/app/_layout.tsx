@@ -27,9 +27,6 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="welcome" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="user/[id]/index" />
-        <Stack.Screen name="user/[id]/followers" />
-        <Stack.Screen name="user/[id]/following" />
         <Stack.Screen name="edit-profile" />
       </Stack>
       <StatusBar style="auto" />

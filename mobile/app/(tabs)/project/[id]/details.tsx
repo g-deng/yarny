@@ -49,7 +49,7 @@ function formatLastWorked(dateStr: string | null): string {
 }
 
 export default function ProjectDetailScreen() {
-  const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { userId } = useUser();
   const router = useRouter();
 
@@ -144,11 +144,11 @@ export default function ProjectDetailScreen() {
     }
   };
 
-  const doDeleteOwned = async () => {
+  const doDeleteOwned = async (force = false) => {
     if (!userId || !id) return;
     setBusy(true);
     try {
-      const result = await deleteProject(id, userId);
+      const result = await deleteProject(id, userId, force);
       if (result.kept_global) {
         Alert.alert(
           'Removed from your library',
@@ -172,17 +172,28 @@ export default function ProjectDetailScreen() {
         "This will permanently delete this project and your progress. This can't be undone.",
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: doDeleteOwned },
+          { text: 'Delete', style: 'destructive', onPress: () => doDeleteOwned(false) },
         ]
       );
     } else if (isOwnProject && project.is_public) {
+      const canHardDelete = (project.adds_count ?? 0) <= 1;
+      const buttons: any[] = [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove from library', onPress: () => doDeleteOwned(false) },
+      ];
+      if (canHardDelete) {
+        buttons.push({
+          text: 'Delete entirely',
+          style: 'destructive',
+          onPress: () => doDeleteOwned(true),
+        });
+      }
       Alert.alert(
         'Remove from your library?',
-        "This project will stay public for the community. We'll remove it from your library and reset your progress.",
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Remove', style: 'destructive', onPress: doDeleteOwned },
-        ]
+        canHardDelete
+          ? "No one else is tracking this project. You can keep it public and just remove it from your library, or delete it entirely for everyone."
+          : "This project will stay public for the community. We'll remove it from your library and reset your progress.",
+        buttons
       );
     } else {
       Alert.alert(
@@ -333,14 +344,10 @@ export default function ProjectDetailScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => {
-            if (from === 'search') {
-              router.replace('/(tabs)/search');
-            } else if (from === 'profile') {
-              router.replace('/(tabs)/profile');
-            } else if (isOwnProject || inLibrary) {
-              router.replace('/(tabs)');
+            if (router.canGoBack()) {
+              router.back();
             } else {
-              router.replace('/(tabs)/search');
+              router.replace('/(tabs)');
             }
           }}
           style={styles.backButton}

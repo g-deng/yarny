@@ -279,17 +279,27 @@ export default function ActiveCrochetingScreen() {
         ]
       );
     } else if (isOwnProject && project.is_public) {
+      const canHardDelete = (project.adds_count ?? 0) <= 1;
+      const buttons: any[] = [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove from library',
+          onPress: () => run(() => deleteProject(id, userId)),
+        },
+      ];
+      if (canHardDelete) {
+        buttons.push({
+          text: 'Delete entirely',
+          style: 'destructive',
+          onPress: () => run(() => deleteProject(id, userId, true)),
+        });
+      }
       Alert.alert(
         'Remove from your library?',
-        "This project will stay public for the community. We'll remove it from your library and reset your progress.",
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: () => run(() => deleteProject(id, userId)),
-          },
-        ]
+        canHardDelete
+          ? "No one else is tracking this project. You can keep it public and just remove it from your library, or delete it entirely for everyone."
+          : "This project will stay public for the community. We'll remove it from your library and reset your progress.",
+        buttons
       );
     } else {
       Alert.alert(
