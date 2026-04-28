@@ -19,6 +19,8 @@ import {
   getPublicProjects,
   addProjectToTrack,
   searchUsers,
+  followUser,
+  unfollowUser,
   type ProjectWithUser,
   type User,
 } from '@/services/api';
@@ -79,6 +81,43 @@ export default function FeedScreen() {
       if (!selectionMode) setSelectedIds(new Set([id]));
     },
     [selectionMode]
+  );
+
+  const toggleFollow = useCallback(
+    async (targetId: string, currentlyFollowing: boolean) => {
+      if (!userId) return;
+      const delta = currentlyFollowing ? -1 : 1;
+      // Optimistic update
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === targetId
+            ? {
+                ...u,
+                is_following: !currentlyFollowing,
+                follower_count: Math.max((u.follower_count ?? 0) + delta, 0),
+              }
+            : u
+        )
+      );
+      try {
+        if (currentlyFollowing) await unfollowUser(userId, targetId);
+        else await followUser(userId, targetId);
+      } catch (err) {
+        console.error('Failed to toggle follow:', err);
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === targetId
+              ? {
+                  ...u,
+                  is_following: currentlyFollowing,
+                  follower_count: Math.max((u.follower_count ?? 0) - delta, 0),
+                }
+              : u
+          )
+        );
+      }
+    },
+    [userId]
   );
 
   const addSelectedToLibrary = useCallback(async () => {
@@ -268,14 +307,25 @@ export default function FeedScreen() {
                   <Text style={styles.userMeta}>
                     {item.follower_count ?? 0}{' '}
                     {item.follower_count === 1 ? 'follower' : 'followers'}
-                    {' · '}
+                  </Text>
+                  <Text style={styles.userMeta}>
                     {item.following_count ?? 0} following
                   </Text>
                 </View>
-                {item.is_following && (
-                  <View style={styles.followingBadge}>
-                    <Text style={styles.followingBadgeText}>Following</Text>
-                  </View>
+                {item.id !== userId && (
+                  <TouchableOpacity
+                    style={item.is_following ? styles.followingBadge : styles.followButton}
+                    onPress={() => toggleFollow(item.id, !!item.is_following)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={
+                        item.is_following ? styles.followingBadgeText : styles.followButtonText
+                      }
+                    >
+                      {item.is_following ? 'Following' : 'Follow'}
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </TouchableOpacity>
             </BrutalShadow>
@@ -595,7 +645,8 @@ const styles = StyleSheet.create({
     fontFamily: BrutalFonts.semibold,
     fontSize: 13,
     color: BrutalColors.textPrimary,
-    marginTop: 2,
+    marginTop: -1,
+    lineHeight: 16,
   },
   followingBadge: {
     paddingHorizontal: 10,
@@ -606,6 +657,19 @@ const styles = StyleSheet.create({
     borderColor: BrutalColors.outline,
   },
   followingBadgeText: {
+    fontFamily: BrutalFonts.black,
+    fontSize: 12,
+    color: BrutalColors.textPrimary,
+  },
+  followButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 2,
+    backgroundColor: 'transparent',
+    borderColor: BrutalColors.outline,
+  },
+  followButtonText: {
     fontFamily: BrutalFonts.black,
     fontSize: 12,
     color: BrutalColors.textPrimary,

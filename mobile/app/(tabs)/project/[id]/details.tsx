@@ -555,8 +555,8 @@ export default function ProjectDetailScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.addButtonContent}>
-                <IconSymbol name="checkmark" size={18} color={BrutalColors.textPrimary} />
-                <Text style={styles.addButtonText}>ADDED TO YOUR LIBRARY</Text>
+                <IconSymbol name="trash" size={18} color={BrutalColors.textPrimary} />
+                <Text style={styles.addButtonText}>Remove from library</Text>
               </View>
             </TouchableOpacity>
           </BrutalShadow>
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   addedButton: {
-    backgroundColor: BrutalColors.lime,
+    backgroundColor: BrutalColors.pink,
   },
   addButtonContent: {
     flexDirection: 'row',
